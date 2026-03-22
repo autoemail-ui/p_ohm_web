@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>รายงานยอดขาย</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/airbnb.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg:#0F172A;--surface:#1E293B;--surface2:#334155;--border:#475569;
+--primary:#3B82F6;--primary-glow:#3B82F640;--accent:#8B5CF6;
+--success:#10B981;--danger:#EF4444;--warning:#F59E0B;
+--text:#F1F5F9;--text2:#94A3B8;--text3:#64748B;
+--radius:16px;--radius-sm:10px;
+}
+body{
+font-family:'IBM Plex Sans Thai',sans-serif;background:var(--bg);color:var(--text);
+min-height:100dvh;overflow-x:hidden;
+}
+.mobile-shell{max-width:480px;margin:0 auto;padding:16px 16px 100px}
+.toast{
+position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);
+background:var(--success);color:#fff;padding:14px 28px;border-radius:var(--radius);
+font-weight:600;z-index:9999;opacity:0;transition:all .4s cubic-bezier(.16,1,.3,1);
+box-shadow:0 8px 32px #10B98140;
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.error{background:var(--danger);box-shadow:0 8px 32px #EF444440}
+.header{
+text-align:center;padding:24px 0 20px;
+}
+.header h1{
+font-size:22px;font-weight:700;
+background:linear-gradient(135deg,var(--primary),var(--accent));
+-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+letter-spacing:-0.5px;
+}
+.header p{color:var(--text3);font-size:13px;margin-top:4px}
+.card{
+background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+padding:20px;margin-bottom:14px;
+transition:border-color .2s;
+}
+.card:focus-within{border-color:var(--primary)}
+.card-title{
+font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;
+letter-spacing:1.5px;margin-bottom:14px;
+display:flex;align-items:center;gap:8px;
+}
+.card-title span{font-size:16px}
+.form-group{margin-bottom:14px}
+.form-group:last-child{margin-bottom:0}
+label{display:block;font-size:13px;color:var(--text2);margin-bottom:6px;font-weight:500}
+input,select{
+width:100%;padding:12px 14px;background:var(--bg);border:1.5px solid var(--border);
+border-radius:var(--radius-sm);color:var(--text);font-size:16px;
+font-family:'IBM Plex Sans Thai',sans-serif;
+transition:border-color .2s,box-shadow .2s;
+-webkit-appearance:none;appearance:none;
+}
+input:focus,select:focus{
+outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-glow);
+}
+input[inputmode="numeric"],input[type="number"]{
+font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600;letter-spacing:0.5px;
+}
+input::placeholder{color:var(--text3);font-family:'IBM Plex Sans Thai',sans-serif;font-size:14px;font-weight:400}
+select{
+background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2394A3B8' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 6l3.5 4 3.5-4z'/%3E%3C/svg%3E");
+background-repeat:no-repeat;background-position:right 12px center;
+padding-right:36px;
+}
+.shift-group{display:flex;gap:8px}
+.shift-btn{
+flex:1;padding:12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+background:var(--bg);color:var(--text2);font-size:14px;font-weight:500;
+cursor:pointer;text-align:center;transition:all .2s;
+font-family:'IBM Plex Sans Thai',sans-serif;
+}
+.shift-btn.active{
+border-color:var(--primary);background:var(--primary);color:#fff;
+box-shadow:0 4px 16px var(--primary-glow);
+}
+.shift-btn:not(.active):active{background:var(--surface2)}
+.team-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.team-chip{
+padding:8px 14px;border-radius:20px;font-size:13px;font-weight:500;
+border:1.5px solid var(--border);background:var(--bg);color:var(--text2);
+cursor:pointer;transition:all .2s;user-select:none;
+}
+.team-chip.selected{
+border-color:var(--accent);background:var(--accent);color:#fff;
+}
+.btn-submit{
+width:100%;padding:16px;border:none;border-radius:var(--radius);
+background:linear-gradient(135deg,var(--primary),var(--accent));
+color:#fff;font-size:16px;font-weight:700;cursor:pointer;
+font-family:'IBM Plex Sans Thai',sans-serif;
+transition:all .2s;position:relative;overflow:hidden;
+box-shadow:0 4px 24px var(--primary-glow);
+}
+.btn-submit:active{transform:scale(0.98)}
+.btn-submit:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.btn-submit .spinner{
+display:none;width:20px;height:20px;border:2.5px solid #fff4;
+border-top-color:#fff;border-radius:50%;
+animation:spin .6s linear infinite;margin:0 auto;
+}
+.btn-submit.loading span{display:none}
+.btn-submit.loading .spinner{display:block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.settings-btn{
+position:fixed;bottom:20px;right:20px;width:52px;height:52px;
+border-radius:50%;border:none;
+background:var(--surface);border:1.5px solid var(--border);
+color:var(--text2);font-size:22px;cursor:pointer;
+box-shadow:0 4px 20px #0004;transition:all .2s;
+z-index:100;display:flex;align-items:center;justify-content:center;
+}
+.settings-btn:active{transform:scale(0.92)}
+.overlay{
+position:fixed;inset:0;background:#000a;z-index:200;opacity:0;
+pointer-events:none;transition:opacity .3s;
+}
+.overlay.show{opacity:1;pointer-events:all}
+.modal{
+position:fixed;bottom:0;left:0;right:0;z-index:201;
+background:var(--surface);border-radius:24px 24px 0 0;
+max-height:90dvh;overflow-y:auto;
+transform:translateY(100%);transition:transform .35s cubic-bezier(.16,1,.3,1);
+}
+.modal.show{transform:translateY(0)}
+.modal-handle{
+width:36px;height:4px;background:var(--border);border-radius:2px;
+margin:10px auto 0;
+}
+.modal-header{
+padding:16px 20px 12px;display:flex;align-items:center;justify-content:space-between;
+border-bottom:1px solid var(--border);position:sticky;top:0;
+background:var(--surface);z-index:1;
+}
+.modal-header h2{font-size:17px;font-weight:700}
+.modal-close{
+background:none;border:none;color:var(--text3);font-size:24px;
+cursor:pointer;padding:4px 8px;
+}
+.modal-body{padding:20px}
+.pin-overlay{text-align:center;padding:40px 20px}
+.pin-title{font-size:18px;font-weight:700;margin-bottom:8px}
+.pin-sub{color:var(--text3);font-size:13px;margin-bottom:24px}
+.pin-dots{display:flex;gap:12px;justify-content:center;margin-bottom:24px}
+.pin-dot{
+width:14px;height:14px;border-radius:50%;
+border:2px solid var(--border);transition:all .2s;
+}
+.pin-dot.filled{background:var(--primary);border-color:var(--primary)}
+.pin-dot.error{background:var(--danger);border-color:var(--danger);animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:260px;margin:0 auto}
+.pin-key{
+padding:16px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+background:var(--bg);color:var(--text);font-size:22px;font-weight:600;
+cursor:pointer;transition:all .15s;font-family:'JetBrains Mono',monospace;
+}
+.pin-key:active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.pin-key.del{font-size:16px;font-family:'IBM Plex Sans Thai',sans-serif;font-weight:500}
+.menu-list{display:flex;flex-direction:column;gap:10px}
+.menu-item{
+display:flex;align-items:center;gap:14px;padding:16px;
+border:1.5px solid var(--border);border-radius:var(--radius);
+background:var(--bg);cursor:pointer;transition:all .2s;
+}
+.menu-item:active{border-color:var(--primary);background:var(--surface2)}
+.menu-icon{font-size:24px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border-radius:12px}
+.menu-label{font-size:15px;font-weight:600}
+.menu-desc{font-size:12px;color:var(--text3);margin-top:2px}
+.dd-item{
+display:flex;align-items:center;gap:10px;padding:12px 14px;
+background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius-sm);
+margin-bottom:8px;transition:all .2s;
+}
+.dd-drag{
+cursor:grab;color:var(--text3);font-size:18px;padding:4px;
+touch-action:none;
+}
+.dd-drag:active{cursor:grabbing}
+.dd-name{flex:1;font-size:14px;font-weight:500}
+.dd-del{
+background:none;border:none;color:var(--danger);font-size:18px;
+cursor:pointer;padding:4px 8px;opacity:0.6;transition:opacity .2s;
+}
+.dd-del:active{opacity:1}
+.dd-add{
+display:flex;gap:8px;margin-top:12px;
+}
+.dd-add input{flex:1;padding:10px 12px;font-size:14px}
+.dd-add button{
+padding:10px 18px;border:none;border-radius:var(--radius-sm);
+background:var(--primary);color:#fff;font-weight:600;cursor:pointer;
+font-family:'IBM Plex Sans Thai',sans-serif;font-size:14px;
+}
+.dd-save{
+width:100%;padding:14px;border:none;border-radius:var(--radius);
+background:var(--success);color:#fff;font-weight:700;font-size:15px;
+cursor:pointer;margin-top:16px;
+font-family:'IBM Plex Sans Thai',sans-serif;
+}
+.target-card{
+background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius-sm);
+padding:16px;margin-bottom:12px;
+}
+.target-label{font-size:12px;color:var(--text3);font-weight:500;margin-bottom:4px}
+.target-current{
+font-size:28px;font-weight:700;
+font-family:'JetBrains Mono',monospace;
+margin-bottom:10px;
+}
+.target-current.blue{color:var(--primary)}
+.target-current.purple{color:var(--accent)}
+.target-input-row{display:flex;gap:8px;align-items:center}
+.target-input-row input{flex:1;padding:10px 12px}
+.target-input-row button{
+padding:10px 16px;border:none;border-radius:var(--radius-sm);
+background:var(--primary);color:#fff;font-weight:600;cursor:pointer;
+font-family:'IBM Plex Sans Thai',sans-serif;font-size:13px;white-space:nowrap;
+}
+.dragging{opacity:0.4;background:var(--surface2)}
+.drag-over{border-color:var(--primary);background:var(--surface)}
+
+@media(min-width:768px){
+body{
+background:linear-gradient(135deg,#0F172A 0%,#1E1B4B 50%,#0F172A 100%);
+display:flex;align-items:center;justify-content:center;
+min-height:100vh;padding:40px;
+}
+.mobile-shell{
+max-width:520px;padding:32px;
+background:var(--surface);
+border:1px solid var(--border);
+border-radius:24px;
+box-shadow:0 24px 80px #0008,0 0 0 1px #ffffff08 inset;
+position:relative;
+}
+.mobile-shell::before{
+content:'';position:absolute;top:-1px;left:20%;right:20%;height:1px;
+background:linear-gradient(90deg,transparent,var(--primary),var(--accent),transparent);
+}
+.card{background:var(--bg)}
+.settings-btn{
+position:absolute;bottom:-70px;right:0;
+box-shadow:0 4px 24px #0006;
+}
+.header h1{font-size:26px}
+.modal{
+position:fixed;bottom:auto;top:50%;left:50%;right:auto;
+transform:translate(-50%,-50%) scale(0.9);
+border-radius:24px;width:480px;max-height:80vh;
+opacity:0;
+}
+.modal.show{transform:translate(-50%,-50%) scale(1);opacity:1}
+}
+</style>
+</head>
+<body>
+
+<div id="toast" class="toast"></div>
+
+<div class="mobile-shell">
+  <div class="header">
+    <h1>📊 รายงานยอดขาย</h1>
+    <p>กรอกข้อมูลยอดขายประจำผลัด</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span>📅</span> วันที่ & ผลัด</div>
+    <div class="form-group">
+      <label>วันที่</label>
+      <input type="text" id="dateInput" placeholder="เลือกวันที่">
+    </div>
+    <div class="form-group">
+      <label>ผลัด</label>
+      <div class="shift-group">
+        <button class="shift-btn active" data-shift="เช้า" onclick="selectShift(this)">🌅 เช้า</button>
+        <button class="shift-btn" data-shift="บ่าย" onclick="selectShift(this)">🌤️ บ่าย</button>
+        <button class="shift-btn" data-shift="ดึก" onclick="selectShift(this)">🌙 ดึก</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span>💰</span> ยอดขาย</div>
+    <div class="form-group">
+      <label>ยอดสินค้า</label>
+      <input type="text" id="productInput" inputmode="numeric" placeholder="0">
+    </div>
+    <div class="form-group">
+      <label>ยอดบัตร</label>
+      <input type="text" id="cardInput" inputmode="numeric" placeholder="0">
+    </div>
+    <div class="form-group">
+      <label>จำนวนลูกค้า</label>
+      <input type="text" id="customerInput" inputmode="numeric" placeholder="0">
+    </div>
+    <div class="form-group">
+      <label>ยอด TM (Wallet)</label>
+      <input type="text" id="tmInput" inputmode="numeric" placeholder="0">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span>👥</span> ทีมงานในผลัด</div>
+    <div id="teamChips" class="team-chips"></div>
+  </div>
+
+  <button class="btn-submit" id="submitBtn" onclick="submitForm()">
+    <span>บันทึกและส่งรายงาน</span>
+    <div class="spinner"></div>
+  </button>
+</div>
+
+<button class="settings-btn" onclick="openSettings()">⚙️</button>
+
+<div id="overlay" class="overlay" onclick="closeModal()"></div>
+<div id="modal" class="modal">
+  <div class="modal-handle"></div>
+  <div class="modal-header">
+    <h2 id="modalTitle">ตั้งค่า</h2>
+    <button class="modal-close" onclick="closeModal()">✕</button>
+  </div>
+  <div class="modal-body" id="modalBody"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+<script>
+const API_URL = '/api/submit';
+let currentShift = 'เช้า';
+let teamNames = [];
+let selectedTeam = [];
+let pinValue = '';
+let dragItem = null;
+let dragIdx = -1;
+
+flatpickr('#dateInput', {
+  locale: 'th',
+  dateFormat: 'd/m/Y',
+  defaultDate: 'today',
+  disableMobile: true
+});
+
+loadDropdown();
+
+function selectShift(el) {
+  document.querySelectorAll('.shift-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  currentShift = el.dataset.shift;
+}
+
+function loadDropdown() {
+  fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'getDropdown' })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      teamNames = data.names || [];
+      renderTeamChips();
+    }
+  })
+  .catch(() => {});
+}
+
+function renderTeamChips() {
+  const c = document.getElementById('teamChips');
+  if (teamNames.length === 0) {
+    c.innerHTML = '<span style="color:var(--text3);font-size:13px">ยังไม่มีรายชื่อ กดตั้งค่าเพื่อเพิ่ม</span>';
+    return;
+  }
+  c.innerHTML = teamNames.map(n =>
+    `<div class="team-chip ${selectedTeam.includes(n)?'selected':''}" onclick="toggleTeam('${n.replace(/'/g,"\\'")}')">${n}</div>`
+  ).join('');
+}
+
+function toggleTeam(name) {
+  if (selectedTeam.includes(name)) {
+    selectedTeam = selectedTeam.filter(n => n !== name);
+  } else {
+    selectedTeam.push(name);
+  }
+  renderTeamChips();
+}
+
+function parseNumber(val) {
+  return Number(String(val).replace(/,/g, '')) || 0;
+}
+
+function formatInput(el) {
+  const raw = el.value.replace(/,/g, '').replace(/[^0-9]/g, '');
+  if (raw === '') { el.value = ''; return; }
+  el.value = Number(raw).toLocaleString('en-US');
+}
+
+document.querySelectorAll('input[inputmode="numeric"]').forEach(inp => {
+  inp.addEventListener('input', () => formatInput(inp));
+});
+
+async function submitForm() {
+  const btn = document.getElementById('submitBtn');
+  const date = document.getElementById('dateInput').value;
+  const product = parseNumber(document.getElementById('productInput').value);
+  const card = parseNumber(document.getElementById('cardInput').value);
+  const customers = parseNumber(document.getElementById('customerInput').value);
+  const tm = parseNumber(document.getElementById('tmInput').value);
+  const team = selectedTeam.join(', ');
+
+  if (!date) { showToast('กรุณาเลือกวันที่', true); return; }
+  if (product === 0 && card === 0) { showToast('กรุณากรอกยอดขาย', true); return; }
+
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'submit',
+        date, shift: currentShift,
+        product, card, customers, tm, team
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('บันทึกสำเร็จ! ส่งแจ้งเตือนแล้ว ✅');
+      document.getElementById('productInput').value = '';
+      document.getElementById('cardInput').value = '';
+      document.getElementById('customerInput').value = '';
+      document.getElementById('tmInput').value = '';
+      selectedTeam = [];
+      renderTeamChips();
+    } else {
+      showToast('เกิดข้อผิดพลาด: ' + (data.error || ''), true);
+    }
+  } catch (e) {
+    showToast('ไม่สามารถเชื่อมต่อได้', true);
+  } finally {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }
+}
+
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+function openSettings() {
+  pinValue = '';
+  showModal('กรอก PIN', renderPinPad());
+}
+
+function showModal(title, html) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('modal').classList.remove('show');
+}
+
+function renderPinPad() {
+  return `
+    <div class="pin-overlay">
+      <div class="pin-title">🔐 ยืนยันตัวตน</div>
+      <div class="pin-sub">กรอก PIN 4 หลัก</div>
+      <div class="pin-dots" id="pinDots">
+        <div class="pin-dot"></div><div class="pin-dot"></div>
+        <div class="pin-dot"></div><div class="pin-dot"></div>
+      </div>
+      <div class="pin-pad">
+        ${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(k =>
+          k === '' ? '<div></div>' :
+          `<button class="pin-key${k==='⌫'?' del':''}" onclick="pressPin('${k}')">${k}</button>`
+        ).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function pressPin(key) {
+  if (key === '⌫') {
+    pinValue = pinValue.slice(0, -1);
+  } else if (pinValue.length < 4) {
+    pinValue += key;
+  }
+  updatePinDots();
+  if (pinValue.length === 4) {
+    setTimeout(() => {
+      if (pinValue === '0000') {
+        showModal('ตั้งค่า', renderMenu());
+      } else {
+        document.querySelectorAll('.pin-dot').forEach(d => d.classList.add('error'));
+        setTimeout(() => {
+          pinValue = '';
+          updatePinDots();
+          document.querySelectorAll('.pin-dot').forEach(d => d.classList.remove('error'));
+        }, 400);
+      }
+    }, 150);
+  }
+}
+
+function updatePinDots() {
+  document.querySelectorAll('.pin-dot').forEach((d, i) => {
+    d.classList.toggle('filled', i < pinValue.length);
+  });
+}
+
+function renderMenu() {
+  return `
+    <div class="menu-list">
+      <div class="menu-item" onclick="openDropdownEdit()">
+        <div class="menu-icon">👥</div>
+        <div><div class="menu-label">แก้ไข Dropdown ทีมงาน</div>
+        <div class="menu-desc">เพิ่ม ลบ แก้ไข สลับลำดับรายชื่อ</div></div>
+      </div>
+      <div class="menu-item" onclick="openTargetEdit()">
+        <div class="menu-icon">🎯</div>
+        <div><div class="menu-label">แก้ไขเป้าหมายยอด</div>
+        <div class="menu-desc">เป้ายอดขาย และเป้ายอดต่อหัว</div></div>
+      </div>
+    </div>
+  `;
+}
+
+let editNames = [];
+
+function openDropdownEdit() {
+  editNames = [...teamNames];
+  showModal('แก้ไข Dropdown ทีมงาน', renderDropdownEdit());
+}
+
+function renderDropdownEdit() {
+  const items = editNames.map((n, i) => `
+    <div class="dd-item" draggable="true" data-idx="${i}"
+      ontouchstart="handleTouchStart(event,${i})"
+      ontouchmove="handleTouchMove(event)"
+      ontouchend="handleTouchEnd(event)"
+      ondragstart="handleDragStart(event,${i})"
+      ondragover="handleDragOver(event,${i})"
+      ondrop="handleDrop(event,${i})"
+      ondragend="handleDragEnd(event)">
+      <div class="dd-drag">☰</div>
+      <div class="dd-name" contenteditable="true" onblur="editName(${i},this)">${n}</div>
+      <button class="dd-del" onclick="delName(${i})">✕</button>
+    </div>
+  `).join('');
+
+  return `
+    <div id="ddList">${items}</div>
+    <div class="dd-add">
+      <input type="text" id="newNameInput" placeholder="เพิ่มรายชื่อ..." onkeydown="if(event.key==='Enter')addName()">
+      <button onclick="addName()">เพิ่ม</button>
+    </div>
+    <button class="dd-save" onclick="saveDropdown()">💾 บันทึกรายชื่อ</button>
+  `;
+}
+
+function addName() {
+  const inp = document.getElementById('newNameInput');
+  const val = inp.value.trim();
+  if (!val) return;
+  editNames.push(val);
+  inp.value = '';
+  document.getElementById('modalBody').innerHTML = renderDropdownEdit();
+}
+
+function delName(idx) {
+  editNames.splice(idx, 1);
+  document.getElementById('modalBody').innerHTML = renderDropdownEdit();
+}
+
+function editName(idx, el) {
+  editNames[idx] = el.textContent.trim();
+}
+
+function handleDragStart(e, idx) {
+  dragIdx = idx;
+  e.target.closest('.dd-item').classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function handleDragOver(e, idx) {
+  e.preventDefault();
+  document.querySelectorAll('.dd-item').forEach(el => el.classList.remove('drag-over'));
+  e.target.closest('.dd-item')?.classList.add('drag-over');
+}
+
+function handleDrop(e, idx) {
+  e.preventDefault();
+  if (dragIdx !== -1 && dragIdx !== idx) {
+    const item = editNames.splice(dragIdx, 1)[0];
+    editNames.splice(idx, 0, item);
+    document.getElementById('modalBody').innerHTML = renderDropdownEdit();
+  }
+}
+
+function handleDragEnd(e) {
+  dragIdx = -1;
+  document.querySelectorAll('.dd-item').forEach(el => {
+    el.classList.remove('dragging');
+    el.classList.remove('drag-over');
+  });
+}
+
+let touchStartY = 0;
+let touchIdx = -1;
+let touchClone = null;
+
+function handleTouchStart(e, idx) {
+  const handle = e.target.closest('.dd-drag');
+  if (!handle) return;
+  e.preventDefault();
+  touchIdx = idx;
+  touchStartY = e.touches[0].clientY;
+}
+
+function handleTouchMove(e) {
+  if (touchIdx === -1) return;
+  e.preventDefault();
+  const touchY = e.touches[0].clientY;
+  const items = document.querySelectorAll('.dd-item');
+  items.forEach((item, i) => {
+    const rect = item.getBoundingClientRect();
+    if (touchY > rect.top && touchY < rect.bottom && i !== touchIdx) {
+      const moved = editNames.splice(touchIdx, 1)[0];
+      editNames.splice(i, 0, moved);
+      touchIdx = i;
+      document.getElementById('modalBody').innerHTML = renderDropdownEdit();
+    }
+  });
+}
+
+function handleTouchEnd(e) {
+  touchIdx = -1;
+}
+
+async function saveDropdown() {
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'saveDropdown', names: editNames })
+    });
+    const data = await res.json();
+    if (data.success) {
+      teamNames = [...editNames];
+      selectedTeam = selectedTeam.filter(n => teamNames.includes(n));
+      renderTeamChips();
+      showToast('บันทึกรายชื่อสำเร็จ ✅');
+      closeModal();
+    }
+  } catch (e) {
+    showToast('เกิดข้อผิดพลาด', true);
+  }
+}
+
+async function openTargetEdit() {
+  showModal('แก้ไขเป้าหมายยอด', '<div style="text-align:center;padding:20px;color:var(--text3)">กำลังโหลด...</div>');
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'getTargets' })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showModal('แก้ไขเป้าหมายยอด', renderTargetEdit(data.salesTarget, data.perHeadTarget));
+    }
+  } catch (e) {
+    showToast('เกิดข้อผิดพลาด', true);
+  }
+}
+
+function renderTargetEdit(sales, perHead) {
+  return `
+    <div class="target-card">
+      <div class="target-label">💰 เป้าหมายยอดขาย</div>
+      <div class="target-current blue">${Number(sales).toLocaleString('en-US')}</div>
+      <div class="target-input-row">
+        <input type="text" id="newSalesTarget" inputmode="numeric" placeholder="ยอดใหม่" value="">
+        <button onclick="saveSingleTarget('sales')">บันทึก</button>
+      </div>
+    </div>
+    <div class="target-card">
+      <div class="target-label">👤 เป้ายอดขายต่อหัว</div>
+      <div class="target-current purple">${Number(perHead).toLocaleString('en-US')}</div>
+      <div class="target-input-row">
+        <input type="text" id="newPerHeadTarget" inputmode="numeric" placeholder="ยอดใหม่" value="">
+        <button onclick="saveSingleTarget('perHead')">บันทึก</button>
+      </div>
+    </div>
+  `;
+}
+
+async function saveSingleTarget(type) {
+  const salesEl = document.getElementById('newSalesTarget');
+  const perHeadEl = document.getElementById('newPerHeadTarget');
+
+  let currentSales = parseNumber(document.querySelector('.target-current.blue')?.textContent);
+  let currentPerHead = parseNumber(document.querySelector('.target-current.purple')?.textContent);
+
+  const newSales = salesEl.value ? parseNumber(salesEl.value) : currentSales;
+  const newPerHead = perHeadEl.value ? parseNumber(perHeadEl.value) : currentPerHead;
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'saveTargets', salesTarget: newSales, perHeadTarget: newPerHead })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('บันทึกเป้าหมายสำเร็จ ✅');
+      showModal('แก้ไขเป้าหมายยอด', renderTargetEdit(newSales, newPerHead));
+    }
+  } catch (e) {
+    showToast('เกิดข้อผิดพลาด', true);
+  }
+}
+
+document.querySelectorAll('.target-input-row input').forEach(inp => {
+  inp?.addEventListener('input', () => formatInput(inp));
+});
+
+new MutationObserver(() => {
+  document.querySelectorAll('#modalBody input[inputmode="numeric"]').forEach(inp => {
+    if (!inp._formatted) {
+      inp._formatted = true;
+      inp.addEventListener('input', () => formatInput(inp));
+    }
+  });
+}).observe(document.getElementById('modalBody'), { childList: true, subtree: true });
+</script>
+</body>
+</html>
