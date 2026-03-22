@@ -114,12 +114,23 @@ animation:spin .6s linear infinite;margin:0 auto;
 .btn-submit.loading .spinner{display:block}
 @keyframes spin{to{transform:rotate(360deg)}}
 .settings-btn{
-position:fixed;bottom:20px;right:20px;width:52px;height:52px;
-border-radius:50%;border:none;
+border-radius:var(--radius);border:none;
 background:var(--surface);border:1.5px solid var(--border);
-color:var(--text2);font-size:22px;cursor:pointer;
-box-shadow:0 4px 20px #0004;transition:all .2s;
-z-index:100;display:flex;align-items:center;justify-content:center;
+color:var(--text2);cursor:pointer;
+transition:all .2s;
+font-family:'IBM Plex Sans Thai',sans-serif;
+}
+.settings-btn:active{transform:scale(0.95)}
+.mobile-settings{
+position:fixed;bottom:20px;right:20px;width:52px;height:52px;
+border-radius:50%;font-size:22px;
+box-shadow:0 4px 20px #0004;z-index:100;
+display:flex;align-items:center;justify-content:center;
+}
+.desktop-settings{
+display:none;width:100%;padding:14px;margin-top:10px;
+font-size:14px;font-weight:600;
+background:var(--bg);
 }
 .settings-btn:active{transform:scale(0.92)}
 .overlay{
@@ -152,22 +163,17 @@ cursor:pointer;padding:4px 8px;
 .pin-overlay{text-align:center;padding:40px 20px}
 .pin-title{font-size:18px;font-weight:700;margin-bottom:8px}
 .pin-sub{color:var(--text3);font-size:13px;margin-bottom:24px}
-.pin-dots{display:flex;gap:12px;justify-content:center;margin-bottom:24px}
-.pin-dot{
-width:14px;height:14px;border-radius:50%;
-border:2px solid var(--border);transition:all .2s;
+.pin-inputs{display:flex;gap:12px;justify-content:center;margin-bottom:24px}
+.pin-input{
+width:52px;height:60px;text-align:center;
+font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;
+background:var(--bg);border:2px solid var(--border);border-radius:var(--radius-sm);
+color:var(--text);transition:all .2s;
+-webkit-text-security:disc;
 }
-.pin-dot.filled{background:var(--primary);border-color:var(--primary)}
-.pin-dot.error{background:var(--danger);border-color:var(--danger);animation:shake .3s}
+.pin-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-glow)}
+.pin-input.error{border-color:var(--danger);animation:shake .3s}
 @keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
-.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:260px;margin:0 auto}
-.pin-key{
-padding:16px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
-background:var(--bg);color:var(--text);font-size:22px;font-weight:600;
-cursor:pointer;transition:all .15s;font-family:'JetBrains Mono',monospace;
-}
-.pin-key:active{background:var(--primary);color:#fff;border-color:var(--primary)}
-.pin-key.del{font-size:16px;font-family:'IBM Plex Sans Thai',sans-serif;font-weight:500}
 .menu-list{display:flex;flex-direction:column;gap:10px}
 .menu-item{
 display:flex;align-items:center;gap:14px;padding:16px;
@@ -250,10 +256,8 @@ content:'';position:absolute;top:-1px;left:20%;right:20%;height:1px;
 background:linear-gradient(90deg,transparent,var(--primary),var(--accent),transparent);
 }
 .card{background:var(--bg)}
-.settings-btn{
-position:absolute;bottom:-70px;right:0;
-box-shadow:0 4px 24px #0006;
-}
+.mobile-settings{display:none}
+.desktop-settings{display:block}
 .header h1{font-size:26px}
 .modal{
 position:fixed;bottom:auto;top:50%;left:50%;right:auto;
@@ -320,9 +324,11 @@ opacity:0;
     <span>บันทึกและส่งรายงาน</span>
     <div class="spinner"></div>
   </button>
+
+  <button class="settings-btn desktop-settings" onclick="openSettings()">⚙️ ตั้งค่า</button>
 </div>
 
-<button class="settings-btn" onclick="openSettings()">⚙️</button>
+<button class="settings-btn mobile-settings" onclick="openSettings()">⚙️</button>
 
 <div id="overlay" class="overlay" onclick="closeModal()"></div>
 <div id="modal" class="modal">
@@ -465,6 +471,7 @@ function showToast(msg, isError) {
 function openSettings() {
   pinValue = '';
   showModal('กรอก PIN', renderPinPad());
+  setTimeout(() => initPinInputs(), 100);
 }
 
 function showModal(title, html) {
@@ -484,47 +491,59 @@ function renderPinPad() {
     <div class="pin-overlay">
       <div class="pin-title">🔐 ยืนยันตัวตน</div>
       <div class="pin-sub">กรอก PIN 4 หลัก</div>
-      <div class="pin-dots" id="pinDots">
-        <div class="pin-dot"></div><div class="pin-dot"></div>
-        <div class="pin-dot"></div><div class="pin-dot"></div>
-      </div>
-      <div class="pin-pad">
-        ${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(k =>
-          k === '' ? '<div></div>' :
-          `<button class="pin-key${k==='⌫'?' del':''}" onclick="pressPin('${k}')">${k}</button>`
-        ).join('')}
+      <div class="pin-inputs" id="pinInputs">
+        <input class="pin-input" type="tel" maxlength="1" inputmode="numeric" data-idx="0" autofocus>
+        <input class="pin-input" type="tel" maxlength="1" inputmode="numeric" data-idx="1">
+        <input class="pin-input" type="tel" maxlength="1" inputmode="numeric" data-idx="2">
+        <input class="pin-input" type="tel" maxlength="1" inputmode="numeric" data-idx="3">
       </div>
     </div>
   `;
 }
 
-function pressPin(key) {
-  if (key === '⌫') {
-    pinValue = pinValue.slice(0, -1);
-  } else if (pinValue.length < 4) {
-    pinValue += key;
-  }
-  updatePinDots();
-  if (pinValue.length === 4) {
+function initPinInputs() {
+  const inputs = document.querySelectorAll('.pin-input');
+  if (!inputs.length) return;
+  inputs[0].focus();
+
+  inputs.forEach((inp, i) => {
+    inp.addEventListener('input', () => {
+      inp.value = inp.value.replace(/[^0-9]/g, '');
+      if (inp.value && i < 3) inputs[i + 1].focus();
+      checkPin();
+    });
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && !inp.value && i > 0) {
+        inputs[i - 1].focus();
+        inputs[i - 1].value = '';
+      }
+    });
+    inp.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const paste = (e.clipboardData.getData('text') || '').replace(/[^0-9]/g, '').slice(0, 4);
+      paste.split('').forEach((ch, j) => { if (inputs[j]) inputs[j].value = ch; });
+      if (paste.length > 0) inputs[Math.min(paste.length, 3)].focus();
+      checkPin();
+    });
+  });
+}
+
+function checkPin() {
+  const inputs = document.querySelectorAll('.pin-input');
+  const val = Array.from(inputs).map(i => i.value).join('');
+  if (val.length === 4) {
     setTimeout(() => {
-      if (pinValue === '0000') {
+      if (val === '0000') {
         showModal('ตั้งค่า', renderMenu());
       } else {
-        document.querySelectorAll('.pin-dot').forEach(d => d.classList.add('error'));
+        inputs.forEach(i => i.classList.add('error'));
         setTimeout(() => {
-          pinValue = '';
-          updatePinDots();
-          document.querySelectorAll('.pin-dot').forEach(d => d.classList.remove('error'));
+          inputs.forEach(i => { i.classList.remove('error'); i.value = ''; });
+          inputs[0].focus();
         }, 400);
       }
     }, 150);
   }
-}
-
-function updatePinDots() {
-  document.querySelectorAll('.pin-dot').forEach((d, i) => {
-    d.classList.toggle('filled', i < pinValue.length);
-  });
 }
 
 function renderMenu() {
