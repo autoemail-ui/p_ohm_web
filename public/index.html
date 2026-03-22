@@ -113,6 +113,15 @@ animation:spin .6s linear infinite;margin:0 auto;
 .btn-submit.loading span{display:none}
 .btn-submit.loading .spinner{display:block}
 @keyframes spin{to{transform:rotate(360deg)}}
+.inline-spinner{
+display:inline-block;width:18px;height:18px;border:2.5px solid var(--border);
+border-top-color:var(--primary);border-radius:50%;
+animation:spin .6s linear infinite;vertical-align:middle;
+}
+.loading-box{
+display:flex;align-items:center;justify-content:center;gap:10px;
+padding:20px;color:var(--text3);font-size:13px;
+}
 .settings-btn{
 border-radius:var(--radius);border:none;
 background:var(--surface);border:1.5px solid var(--border);
@@ -367,6 +376,8 @@ function selectShift(el) {
 }
 
 function loadDropdown() {
+  const c = document.getElementById('teamChips');
+  c.innerHTML = '<div class="loading-box"><div class="inline-spinner"></div>กำลังโหลดรายชื่อ...</div>';
   fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -377,9 +388,13 @@ function loadDropdown() {
     if (data.success) {
       teamNames = data.names || [];
       renderTeamChips();
+    } else {
+      c.innerHTML = '<span style="color:var(--text3);font-size:13px">โหลดไม่สำเร็จ</span>';
     }
   })
-  .catch(() => {});
+  .catch(() => {
+    c.innerHTML = '<span style="color:var(--text3);font-size:13px">ไม่สามารถเชื่อมต่อได้</span>';
+  });
 }
 
 function renderTeamChips() {
@@ -676,6 +691,8 @@ function handleTouchEnd(e) {
 }
 
 async function saveDropdown() {
+  const btn = document.querySelector('.dd-save');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="inline-spinner" style="border-top-color:#fff"></div> กำลังบันทึก...'; }
   try {
     const res = await fetch(API_URL, {
       method: 'POST',
@@ -696,7 +713,7 @@ async function saveDropdown() {
 }
 
 async function openTargetEdit() {
-  showModal('แก้ไขเป้าหมายยอด', '<div style="text-align:center;padding:20px;color:var(--text3)">กำลังโหลด...</div>');
+  showModal('แก้ไขเป้าหมายยอด', '<div class="loading-box"><div class="inline-spinner"></div>กำลังโหลดข้อมูล...</div>');
   try {
     const res = await fetch(API_URL, {
       method: 'POST',
@@ -736,6 +753,8 @@ function renderTargetEdit(sales, perHead) {
 async function saveSingleTarget(type) {
   const salesEl = document.getElementById('newSalesTarget');
   const perHeadEl = document.getElementById('newPerHeadTarget');
+  const btns = document.querySelectorAll('.target-input-row button');
+  btns.forEach(b => { b.disabled = true; b.innerHTML = '<div class="inline-spinner" style="border-top-color:#fff;width:14px;height:14px"></div>'; });
 
   let currentSales = parseNumber(document.querySelector('.target-current.blue')?.textContent);
   let currentPerHead = parseNumber(document.querySelector('.target-current.purple')?.textContent);
@@ -756,6 +775,7 @@ async function saveSingleTarget(type) {
     }
   } catch (e) {
     showToast('เกิดข้อผิดพลาด', true);
+    btns.forEach(b => { b.disabled = false; b.textContent = 'บันทึก'; });
   }
 }
 
