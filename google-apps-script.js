@@ -1,4 +1,4 @@
-const SHEET_ID = 'YOUR_GOOGLE_SHEET_ID';
+
 
 function doPost(e) {
   const lock = LockService.getScriptLock();
@@ -23,7 +23,7 @@ function doPost(e) {
 }
 
 function handleSubmit(data) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName('ข้อมูลรวม');
   const dbSheet = ss.getSheetByName('_database');
 
@@ -95,7 +95,7 @@ function handleSubmit(data) {
 }
 
 function handleGetDropdown() {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
   const dbSheet = ss.getSheetByName('_database');
   const lastRow = dbSheet.getLastRow();
   const names = [];
@@ -113,7 +113,7 @@ function handleGetDropdown() {
 }
 
 function handleSaveDropdown(data) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
   const dbSheet = ss.getSheetByName('_database');
   const lastRow = dbSheet.getLastRow();
 
@@ -130,7 +130,7 @@ function handleSaveDropdown(data) {
 }
 
 function handleGetTargets(data) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
   const targetSheet = ss.getSheetByName('ยอดขาย');
   const month = data.month;
   const year = data.year;
@@ -160,7 +160,7 @@ function handleGetTargets(data) {
 }
 
 function handleSaveTargets(data) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
   const targetSheet = ss.getSheetByName('ยอดขาย');
   const key = data.key;
   const t = data.targets;
@@ -209,7 +209,7 @@ function jsonResponse(obj) {
 }
 
 function setupSheets() {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
 
   let sheet1 = ss.getSheetByName('ข้อมูลรวม');
   if (!sheet1) {
