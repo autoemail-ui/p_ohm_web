@@ -1,5 +1,20 @@
 
 
+function getSS() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (ss) return ss;
+  var id = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
+  if (id) return SpreadsheetApp.openById(id);
+  return null;
+}
+
+function initSheetId() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (ss) {
+    PropertiesService.getScriptProperties().setProperty('SHEET_ID', ss.getId());
+  }
+}
+
 function doPost(e) {
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
@@ -23,7 +38,7 @@ function doPost(e) {
 }
 
 function handleSubmit(data) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSS();
   const sheet = ss.getSheetByName('ข้อมูลรวม');
   const dbSheet = ss.getSheetByName('_database');
 
@@ -95,7 +110,7 @@ function handleSubmit(data) {
 }
 
 function handleGetDropdown() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSS();
   const dbSheet = ss.getSheetByName('_database');
   const lastRow = dbSheet.getLastRow();
   const names = [];
@@ -113,7 +128,7 @@ function handleGetDropdown() {
 }
 
 function handleSaveDropdown(data) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSS();
   const dbSheet = ss.getSheetByName('_database');
   const lastRow = dbSheet.getLastRow();
 
@@ -130,7 +145,7 @@ function handleSaveDropdown(data) {
 }
 
 function handleGetTargets(data) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSS();
   const targetSheet = ss.getSheetByName('ยอดขาย');
   const month = data.month;
   const year = data.year;
@@ -160,7 +175,7 @@ function handleGetTargets(data) {
 }
 
 function handleSaveTargets(data) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSS();
   const targetSheet = ss.getSheetByName('ยอดขาย');
   const key = data.key;
   const t = data.targets;
@@ -209,7 +224,8 @@ function jsonResponse(obj) {
 }
 
 function setupSheets() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  initSheetId();
+  const ss = getSS();
 
   let sheet1 = ss.getSheetByName('ข้อมูลรวม');
   if (!sheet1) {
