@@ -499,6 +499,8 @@ function showModal(title, html) {
 function closeModal() {
   document.getElementById('overlay').classList.remove('show');
   document.getElementById('modal').classList.remove('show');
+  document.activeElement?.blur();
+  setTimeout(() => { document.getElementById('modalBody').innerHTML = ''; }, 350);
 }
 
 function renderPinPad() {
@@ -507,7 +509,7 @@ function renderPinPad() {
       <div class="pin-title">🔐 ยืนยันตัวตน</div>
       <div class="pin-sub">กรอก PIN 4 หลัก</div>
       <div class="pin-inputs" id="pinInputs">
-        <input class="pin-input" type="tel" maxlength="1" inputmode="numeric" data-idx="0" autofocus>
+        <input class="pin-input" type="tel" maxlength="1" inputmode="numeric" data-idx="0">
         <input class="pin-input" type="tel" maxlength="1" inputmode="numeric" data-idx="1">
         <input class="pin-input" type="tel" maxlength="1" inputmode="numeric" data-idx="2">
         <input class="pin-input" type="tel" maxlength="1" inputmode="numeric" data-idx="3">

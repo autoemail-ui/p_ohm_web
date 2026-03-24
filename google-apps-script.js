@@ -45,7 +45,7 @@ function handleSubmit(data) {
   if (tLastRow >= 2) {
     var tRows = targetSheet.getRange(2, 1, tLastRow - 1, 7).getValues();
     for (var ti = 0; ti < tRows.length; ti++) {
-      if (tRows[ti][0] === targetKey) {
+      if (String(tRows[ti][0]).trim() === targetKey) {
         var colMap = { 'Morning': [1,4], 'Afternoon': [2,5], 'Night': [3,6] };
         salesTarget = Number(tRows[ti][colMap[shiftSuffix][0]]) || 0;
         perHeadTarget = Number(tRows[ti][colMap[shiftSuffix][1]]) || 0;
@@ -142,7 +142,7 @@ function handleGetTargets(data) {
   if (lastRow >= 2) {
     const rows = targetSheet.getRange(2, 1, lastRow - 1, 7).getValues();
     for (var i = 0; i < rows.length; i++) {
-      if (rows[i][0] === key) {
+      if (String(rows[i][0]).trim() === key) {
         result = {
           salesMorning: Number(rows[i][1]) || 0,
           salesAfternoon: Number(rows[i][2]) || 0,
@@ -171,7 +171,7 @@ function handleSaveTargets(data) {
   if (lastRow >= 2) {
     const keys = targetSheet.getRange(2, 1, lastRow - 1, 1).getValues();
     for (var i = 0; i < keys.length; i++) {
-      if (keys[i][0] === key) {
+      if (String(keys[i][0]).trim() === key) {
         foundRow = i + 2;
         break;
       }
@@ -180,16 +180,18 @@ function handleSaveTargets(data) {
 
   const rowData = [key, t.salesMorning, t.salesAfternoon, t.salesNight, t.perHeadMorning, t.perHeadAfternoon, t.perHeadNight];
 
+  var writeRow;
+
   if (foundRow > 0) {
     targetSheet.getRange(foundRow, 1, 1, 7).setValues([rowData]);
+    writeRow = foundRow;
   } else {
     targetSheet.appendRow(rowData);
+    writeRow = targetSheet.getLastRow();
   }
 
-  const logSheet = ss.getSheetByName('ยอดขาย');
-  const logRow = logSheet.getLastRow() + 1;
-  logSheet.getRange(logRow, 8).setValue(new Date());
-  logSheet.getRange(logRow, 9).setValue('แก้ไขเป้า ' + key + ': ขายเช้า=' + t.salesMorning + ' บ่าย=' + t.salesAfternoon + ' ดึก=' + t.salesNight + ' | ต่อหัวเช้า=' + t.perHeadMorning + ' บ่าย=' + t.perHeadAfternoon + ' ดึก=' + t.perHeadNight);
+  targetSheet.getRange(writeRow, 8).setValue(new Date());
+  targetSheet.getRange(writeRow, 9).setValue('แก้ไขเป้า ' + key + ': ขายเช้า=' + t.salesMorning + ' บ่าย=' + t.salesAfternoon + ' ดึก=' + t.salesNight + ' | ต่อหัวเช้า=' + t.perHeadMorning + ' บ่าย=' + t.perHeadAfternoon + ' ดึก=' + t.perHeadNight);
 
   return jsonResponse({ success: true });
 }
