@@ -11,7 +11,7 @@ function doPost(e) {
     if (action === 'submit') return handleSubmit(data);
     if (action === 'getDropdown') return handleGetDropdown();
     if (action === 'saveDropdown') return handleSaveDropdown(data);
-    if (action === 'getTargets') return handleGetTargets();
+    if (action === 'getTargets') return handleGetTargets(data);
     if (action === 'saveTargets') return handleSaveTargets(data);
 
     return jsonResponse({ success: false, error: 'Unknown action' });
@@ -33,9 +33,26 @@ function handleSubmit(data) {
   const walletPercent = total > 0 ? (Number(data.tm) / total) * 100 : 0;
 
   const targetSheet = ss.getSheetByName('ยอดขาย');
-  const targetData = targetSheet.getRange('A2:B2').getValues()[0];
-  const salesTarget = Number(targetData[0]) || 0;
-  const perHeadTarget = Number(targetData[1]) || 0;
+  var salesTarget = 0;
+  var perHeadTarget = 0;
+
+  var dateParts = data.date.split('/');
+  var targetKey = dateParts[2] + '-' + dateParts[1];
+  var shiftMap = { 'เช้า': 'Morning', 'บ่าย': 'Afternoon', 'ดึก': 'Night' };
+  var shiftSuffix = shiftMap[data.shift] || 'Morning';
+
+  var tLastRow = targetSheet.getLastRow();
+  if (tLastRow >= 2) {
+    var tRows = targetSheet.getRange(2, 1, tLastRow - 1, 7).getValues();
+    for (var ti = 0; ti < tRows.length; ti++) {
+      if (tRows[ti][0] === targetKey) {
+        var colMap = { 'Morning': [1,4], 'Afternoon': [2,5], 'Night': [3,6] };
+        salesTarget = Number(tRows[ti][colMap[shiftSuffix][0]]) || 0;
+        perHeadTarget = Number(tRows[ti][colMap[shiftSuffix][1]]) || 0;
+        break;
+      }
+    }
+  }
 
   const salesPercent = salesTarget > 0 ? (total / salesTarget) * 100 : 0;
   const perHeadPercent = perHeadTarget > 0 ? (perHead / perHeadTarget) * 100 : 0;
@@ -112,33 +129,67 @@ function handleSaveDropdown(data) {
   return jsonResponse({ success: true });
 }
 
-function handleGetTargets() {
+function handleGetTargets(data) {
   const ss = SpreadsheetApp.openById(SHEET_ID);
   const targetSheet = ss.getSheetByName('ยอดขาย');
-  const values = targetSheet.getRange('A2:B2').getValues()[0];
+  const month = data.month;
+  const year = data.year;
+  const key = year + '-' + String(month).padStart(2, '0');
 
-  return jsonResponse({
-    success: true,
-    salesTarget: Number(values[0]) || 0,
-    perHeadTarget: Number(values[1]) || 0
-  });
+  const lastRow = targetSheet.getLastRow();
+  var result = { salesMorning: 0, salesAfternoon: 0, salesNight: 0, perHeadMorning: 0, perHeadAfternoon: 0, perHeadNight: 0 };
+
+  if (lastRow >= 2) {
+    const rows = targetSheet.getRange(2, 1, lastRow - 1, 7).getValues();
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i][0] === key) {
+        result = {
+          salesMorning: Number(rows[i][1]) || 0,
+          salesAfternoon: Number(rows[i][2]) || 0,
+          salesNight: Number(rows[i][3]) || 0,
+          perHeadMorning: Number(rows[i][4]) || 0,
+          perHeadAfternoon: Number(rows[i][5]) || 0,
+          perHeadNight: Number(rows[i][6]) || 0
+        };
+        break;
+      }
+    }
+  }
+
+  return jsonResponse({ success: true, targets: result, key: key });
 }
 
 function handleSaveTargets(data) {
   const ss = SpreadsheetApp.openById(SHEET_ID);
   const targetSheet = ss.getSheetByName('ยอดขาย');
-
-  const oldValues = targetSheet.getRange('A2:B2').getValues()[0];
-  const oldSales = Number(oldValues[0]) || 0;
-  const oldPerHead = Number(oldValues[1]) || 0;
-
-  targetSheet.getRange('A2').setValue(Number(data.salesTarget));
-  targetSheet.getRange('B2').setValue(Number(data.perHeadTarget));
+  const key = data.key;
+  const t = data.targets;
 
   const lastRow = targetSheet.getLastRow();
-  targetSheet.getRange(lastRow + 1, 3).setValue(new Date());
-  targetSheet.getRange(lastRow + 1, 4).setValue('เป้ายอดขาย: ' + oldSales + ' → ' + data.salesTarget);
-  targetSheet.getRange(lastRow + 1, 5).setValue('เป้าต่อหัว: ' + oldPerHead + ' → ' + data.perHeadTarget);
+  var foundRow = -1;
+
+  if (lastRow >= 2) {
+    const keys = targetSheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    for (var i = 0; i < keys.length; i++) {
+      if (keys[i][0] === key) {
+        foundRow = i + 2;
+        break;
+      }
+    }
+  }
+
+  const rowData = [key, t.salesMorning, t.salesAfternoon, t.salesNight, t.perHeadMorning, t.perHeadAfternoon, t.perHeadNight];
+
+  if (foundRow > 0) {
+    targetSheet.getRange(foundRow, 1, 1, 7).setValues([rowData]);
+  } else {
+    targetSheet.appendRow(rowData);
+  }
+
+  const logSheet = ss.getSheetByName('ยอดขาย');
+  const logRow = logSheet.getLastRow() + 1;
+  logSheet.getRange(logRow, 8).setValue(new Date());
+  logSheet.getRange(logRow, 9).setValue('แก้ไขเป้า ' + key + ': ขายเช้า=' + t.salesMorning + ' บ่าย=' + t.salesAfternoon + ' ดึก=' + t.salesNight + ' | ต่อหัวเช้า=' + t.perHeadMorning + ' บ่าย=' + t.perHeadAfternoon + ' ดึก=' + t.perHeadNight);
 
   return jsonResponse({ success: true });
 }
@@ -167,9 +218,7 @@ function setupSheets() {
   let sheet2 = ss.getSheetByName('ยอดขาย');
   if (!sheet2) {
     sheet2 = ss.insertSheet('ยอดขาย');
-    sheet2.appendRow(['เป้ายอดขาย', 'เป้าต่อหัว', 'วันที่เปลี่ยน', 'รายละเอียด', 'รายละเอียด2']);
-    sheet2.getRange('A2').setValue(0);
-    sheet2.getRange('B2').setValue(0);
+    sheet2.appendRow(['key(YYYY-MM)', 'เป้าขายเช้า', 'เป้าขายบ่าย', 'เป้าขายดึก', 'เป้าต่อหัวเช้า', 'เป้าต่อหัวบ่าย', 'เป้าต่อหัวดึก', 'วันที่แก้ไข', 'รายละเอียด']);
   }
 
   let sheet3 = ss.getSheetByName('_database');

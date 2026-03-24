@@ -712,76 +712,119 @@ async function saveDropdown() {
   }
 }
 
+let targetMonth = new Date().getMonth() + 1;
+let targetYear = new Date().getFullYear();
+let currentTargets = null;
+
 async function openTargetEdit() {
-  showModal('แก้ไขเป้าหมายยอด', '<div class="loading-box"><div class="inline-spinner"></div>กำลังโหลดข้อมูล...</div>');
-  try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'getTargets' })
-    });
-    const data = await res.json();
-    if (data.success) {
-      showModal('แก้ไขเป้าหมายยอด', renderTargetEdit(data.salesTarget, data.perHeadTarget));
-    }
-  } catch (e) {
-    showToast('เกิดข้อผิดพลาด', true);
-  }
+  showModal('แก้ไขเป้าหมายยอด', renderTargetMonthPicker() + '<div id="targetContent"><div class="loading-box"><div class="inline-spinner"></div>กำลังโหลดข้อมูล...</div></div>');
+  await loadTargets();
 }
 
-function renderTargetEdit(sales, perHead) {
+function renderTargetMonthPicker() {
+  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const monthOpts = months.map((m, i) => `<option value="${i+1}" ${i+1===targetMonth?'selected':''}>${m}</option>`).join('');
+  const yearOpts = [targetYear-1, targetYear, targetYear+1].map(y => `<option value="${y}" ${y===targetYear?'selected':''}>${y+543}</option>`).join('');
   return `
-    <div class="target-card">
-      <div class="target-label">💰 เป้าหมายยอดขาย</div>
-      <div class="target-current blue">${Number(sales).toLocaleString('en-US')}</div>
-      <div class="target-input-row">
-        <input type="text" id="newSalesTarget" inputmode="numeric" placeholder="ยอดใหม่" value="">
-        <button onclick="saveSingleTarget('sales')">บันทึก</button>
-      </div>
-    </div>
-    <div class="target-card">
-      <div class="target-label">👤 เป้ายอดขายต่อหัว</div>
-      <div class="target-current purple">${Number(perHead).toLocaleString('en-US')}</div>
-      <div class="target-input-row">
-        <input type="text" id="newPerHeadTarget" inputmode="numeric" placeholder="ยอดใหม่" value="">
-        <button onclick="saveSingleTarget('perHead')">บันทึก</button>
-      </div>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <select id="targetMonthSel" onchange="changeTargetPeriod()" style="flex:1;padding:10px 12px;font-size:14px">${monthOpts}</select>
+      <select id="targetYearSel" onchange="changeTargetPeriod()" style="flex:1;padding:10px 12px;font-size:14px">${yearOpts}</select>
     </div>
   `;
 }
 
-async function saveSingleTarget(type) {
-  const salesEl = document.getElementById('newSalesTarget');
-  const perHeadEl = document.getElementById('newPerHeadTarget');
-  const btns = document.querySelectorAll('.target-input-row button');
-  btns.forEach(b => { b.disabled = true; b.innerHTML = '<div class="inline-spinner" style="border-top-color:#fff;width:14px;height:14px"></div>'; });
+async function changeTargetPeriod() {
+  targetMonth = Number(document.getElementById('targetMonthSel').value);
+  targetYear = Number(document.getElementById('targetYearSel').value);
+  document.getElementById('targetContent').innerHTML = '<div class="loading-box"><div class="inline-spinner"></div>กำลังโหลดข้อมูล...</div>';
+  await loadTargets();
+}
 
-  let currentSales = parseNumber(document.querySelector('.target-current.blue')?.textContent);
-  let currentPerHead = parseNumber(document.querySelector('.target-current.purple')?.textContent);
+async function loadTargets() {
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'getTargets', month: targetMonth, year: targetYear })
+    });
+    const data = await res.json();
+    if (data.success) {
+      currentTargets = data.targets;
+      document.getElementById('targetContent').innerHTML = renderTargetEdit(data.targets);
+    }
+  } catch (e) {
+    document.getElementById('targetContent').innerHTML = '<div class="loading-box" style="color:var(--danger)">โหลดไม่สำเร็จ</div>';
+  }
+}
 
-  const newSales = salesEl.value ? parseNumber(salesEl.value) : currentSales;
-  const newPerHead = perHeadEl.value ? parseNumber(perHeadEl.value) : currentPerHead;
+function renderTargetEdit(t) {
+  return `
+    <div class="target-card">
+      <div class="target-label">💰 เป้าหมายยอดขาย</div>
+      ${renderShiftRow('sales', 'เช้า', 'Morning', t.salesMorning, 'blue')}
+      ${renderShiftRow('sales', 'บ่าย', 'Afternoon', t.salesAfternoon, 'blue')}
+      ${renderShiftRow('sales', 'ดึก', 'Night', t.salesNight, 'blue')}
+    </div>
+    <div class="target-card">
+      <div class="target-label">👤 เป้ายอดขายต่อหัว</div>
+      ${renderShiftRow('perHead', 'เช้า', 'Morning', t.perHeadMorning, 'purple')}
+      ${renderShiftRow('perHead', 'บ่าย', 'Afternoon', t.perHeadAfternoon, 'purple')}
+      ${renderShiftRow('perHead', 'ดึก', 'Night', t.perHeadNight, 'purple')}
+    </div>
+    <button class="dd-save" onclick="saveAllTargets()" id="saveTargetBtn">💾 บันทึกเป้าหมาย</button>
+  `;
+}
+
+function renderShiftRow(type, label, suffix, value, color) {
+  const id = type + suffix;
+  return `
+    <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+      <span style="font-size:13px;color:var(--text2);width:32px;flex-shrink:0">${label}</span>
+      <span class="target-val-${id}" style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:var(--${color==='blue'?'primary':'accent'});min-width:60px">${Number(value).toLocaleString('en-US')}</span>
+      <input type="text" id="${id}" inputmode="numeric" placeholder="ยอดใหม่" style="flex:1;padding:8px 10px;font-size:14px">
+    </div>
+  `;
+}
+
+async function saveAllTargets() {
+  const btn = document.getElementById('saveTargetBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="inline-spinner" style="border-top-color:#fff"></div> กำลังบันทึก...';
+
+  const getVal = (id, fallback) => {
+    const el = document.getElementById(id);
+    return el && el.value ? parseNumber(el.value) : fallback;
+  };
+
+  const targets = {
+    salesMorning: getVal('salesMorning', currentTargets.salesMorning),
+    salesAfternoon: getVal('salesAfternoon', currentTargets.salesAfternoon),
+    salesNight: getVal('salesNight', currentTargets.salesNight),
+    perHeadMorning: getVal('perHeadMorning', currentTargets.perHeadMorning),
+    perHeadAfternoon: getVal('perHeadAfternoon', currentTargets.perHeadAfternoon),
+    perHeadNight: getVal('perHeadNight', currentTargets.perHeadNight)
+  };
+
+  const key = targetYear + '-' + String(targetMonth).padStart(2, '0');
 
   try {
     const res = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'saveTargets', salesTarget: newSales, perHeadTarget: newPerHead })
+      body: JSON.stringify({ action: 'saveTargets', key, targets })
     });
     const data = await res.json();
     if (data.success) {
       showToast('บันทึกเป้าหมายสำเร็จ ✅');
-      showModal('แก้ไขเป้าหมายยอด', renderTargetEdit(newSales, newPerHead));
+      currentTargets = targets;
+      document.getElementById('targetContent').innerHTML = renderTargetEdit(targets);
     }
   } catch (e) {
     showToast('เกิดข้อผิดพลาด', true);
-    btns.forEach(b => { b.disabled = false; b.textContent = 'บันทึก'; });
+    btn.disabled = false;
+    btn.innerHTML = '💾 บันทึกเป้าหมาย';
   }
 }
-
-document.querySelectorAll('.target-input-row input').forEach(inp => {
-  inp?.addEventListener('input', () => formatInput(inp));
-});
 
 new MutationObserver(() => {
   document.querySelectorAll('#modalBody input[inputmode="numeric"]').forEach(inp => {
