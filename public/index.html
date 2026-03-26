@@ -864,60 +864,179 @@ async function openSkuEdit() {
 async function openFocusEdit() {
   showModal('แก้ไข Focus 4SKU', '<div class="loading-box"><div class="inline-spinner"></div>กำลังโหลด...</div>');
   try {
-    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'getFocus' }) });
-    const data = await res.json();
-    if (data.success) {
-      editFocusList = data.focus || [];
-      showModal('แก้ไข Focus 4SKU', renderListEdit('focus'));
+    const [focusRes, skuRes] = await Promise.all([
+      fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'getFocus' }) }).then(r => r.json()),
+      fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'getSku' }) }).then(r => r.json())
+    ]);
+    if (focusRes.success && skuRes.success) {
+      editFocusList = focusRes.focus || [];
+      allSkuOptions = skuRes.skus || [];
+      showModal('แก้ไข Focus 4SKU', renderFocusEdit());
     }
   } catch (e) { showToast('เกิดข้อผิดพลาด', true); }
 }
+
+var allSkuOptions = [];
+var focusSearchOpen = false;
+
+function renderFocusEdit() {
+  const items = editFocusList.map((item, i) => `
+    <div class="dd-item">
+      <div class="dd-name">${item}</div>
+      <button class="dd-del" onclick="delFocusItem(${i})">✕</button>
+    </div>
+  `).join('');
+
+  const canAdd = editFocusList.length < 4;
+  return `
+    <div>${items}</div>
+    <div style="color:var(--text3);font-size:12px;margin:8px 0">สูงสุด 4 รายการ (${editFocusList.length}/4)</div>
+    ${canAdd ? `
+    <div style="position:relative">
+      <input type="text" id="focusSearchInput" placeholder="พิมพ์ค้นหา SKU..." oninput="filterSkuDropdown()" onfocus="showSkuDropdown()" autocomplete="off" style="width:100%;padding:10px 12px;font-size:14px">
+      <div id="skuDropdown" style="display:none;position:absolute;left:0;right:0;top:100%;max-height:200px;overflow-y:auto;background:var(--bg);border:1.5px solid var(--border);border-radius:0 0 var(--radius-sm) var(--radius-sm);z-index:10"></div>
+    </div>
+    ` : ''}
+    <button class="dd-save" onclick="saveList('focus')" style="margin-top:16px">💾 บันทึก</button>
+  `;
+}
+
+function showSkuDropdown() {
+  focusSearchOpen = true;
+  filterSkuDropdown();
+}
+
+function filterSkuDropdown() {
+  const input = document.getElementById('focusSearchInput');
+  const dd = document.getElementById('skuDropdown');
+  if (!input || !dd) return;
+  const q = input.value.trim().toLowerCase();
+  const available = allSkuOptions.filter(s => !editFocusList.includes(s));
+  const filtered = q ? available.filter(s => s.toLowerCase().includes(q)) : available;
+
+  if (filtered.length === 0) {
+    dd.innerHTML = '<div style="padding:10px 14px;color:var(--text3);font-size:13px">ไม่พบรายการ</div>';
+  } else {
+    dd.innerHTML = filtered.map(s => `
+      <div onclick="selectFocusSku('${s.replace(/'/g, "\\'")}')" style="padding:10px 14px;font-size:14px;color:var(--text);cursor:pointer;transition:background .15s"
+        onmouseenter="this.style.background='var(--surface2)'" onmouseleave="this.style.background='transparent'">${s}</div>
+    `).join('');
+  }
+  dd.style.display = 'block';
+}
+
+function selectFocusSku(name) {
+  if (editFocusList.length >= 4) { showToast('Focus 4SKU สูงสุด 4 รายการ', true); return; }
+  if (editFocusList.includes(name)) { showToast('รายการนี้เลือกอยู่แล้ว', true); return; }
+  editFocusList.push(name);
+  document.getElementById('modalBody').innerHTML = renderFocusEdit();
+}
+
+function delFocusItem(idx) {
+  editFocusList.splice(idx, 1);
+  document.getElementById('modalBody').innerHTML = renderFocusEdit();
+}
+
+document.addEventListener('click', function(e) {
+  const dd = document.getElementById('skuDropdown');
+  const inp = document.getElementById('focusSearchInput');
+  if (dd && inp && !inp.contains(e.target) && !dd.contains(e.target)) {
+    dd.style.display = 'none';
+  }
+});
 
 var editSkuList = [];
 var editFocusList = [];
 
 function renderListEdit(type) {
-  const list = type === 'sku' ? editSkuList : editFocusList;
-  const maxItems = type === 'focus' ? 4 : 999;
+  const list = editSkuList;
   const items = list.map((item, i) => `
-    <div class="dd-item">
-      <div class="dd-name" contenteditable="true" onblur="editListItem('${type}',${i},this)">${item}</div>
-      <button class="dd-del" onclick="delListItem('${type}',${i})">✕</button>
+    <div class="dd-item" draggable="true" data-idx="${i}"
+      ontouchstart="skuTouchStart(event,${i})"
+      ontouchmove="skuTouchMove(event)"
+      ontouchend="skuTouchEnd(event)"
+      ondragstart="skuDragStart(event,${i})"
+      ondragover="skuDragOver(event,${i})"
+      ondrop="skuDrop(event,${i})"
+      ondragend="skuDragEnd(event)">
+      <div class="dd-drag">☰</div>
+      <div class="dd-name" contenteditable="true" onblur="editListItem('sku',${i},this)">${item}</div>
+      <button class="dd-del" onclick="delListItem('sku',${i})">✕</button>
     </div>
   `).join('');
 
-  const addDisabled = type === 'focus' && list.length >= 4;
   return `
-    <div>${items}</div>
-    ${type === 'focus' ? `<div style="color:var(--text3);font-size:12px;margin-bottom:8px">สูงสุด 4 รายการ (${list.length}/4)</div>` : ''}
+    <div id="skuListContainer">${items}</div>
     <div class="dd-add">
-      <input type="text" id="${type}NewInput" placeholder="เพิ่มรายการ..." onkeydown="if(event.key==='Enter')addListItem('${type}')" ${addDisabled ? 'disabled' : ''}>
-      <button onclick="addListItem('${type}')" ${addDisabled ? 'disabled' : ''}>เพิ่ม</button>
+      <input type="text" id="skuNewInput" placeholder="เพิ่มรายการ SKU..." onkeydown="if(event.key==='Enter')addListItem('sku')">
+      <button onclick="addListItem('sku')">เพิ่ม</button>
     </div>
-    <button class="dd-save" onclick="saveList('${type}')">💾 บันทึก</button>
+    <button class="dd-save" onclick="saveList('sku')">💾 บันทึก</button>
   `;
 }
 
+var skuDragIdx = -1;
+var skuTouchIdx = -1;
+
+function skuDragStart(e, idx) {
+  skuDragIdx = idx;
+  e.target.closest('.dd-item').classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function skuDragOver(e, idx) {
+  e.preventDefault();
+  document.querySelectorAll('#skuListContainer .dd-item').forEach(el => el.classList.remove('drag-over'));
+  e.target.closest('.dd-item')?.classList.add('drag-over');
+}
+function skuDrop(e, idx) {
+  e.preventDefault();
+  if (skuDragIdx !== -1 && skuDragIdx !== idx) {
+    const item = editSkuList.splice(skuDragIdx, 1)[0];
+    editSkuList.splice(idx, 0, item);
+    document.getElementById('modalBody').innerHTML = renderListEdit('sku');
+  }
+}
+function skuDragEnd(e) {
+  skuDragIdx = -1;
+  document.querySelectorAll('#skuListContainer .dd-item').forEach(el => { el.classList.remove('dragging'); el.classList.remove('drag-over'); });
+}
+function skuTouchStart(e, idx) {
+  if (!e.target.closest('.dd-drag')) return;
+  e.preventDefault();
+  skuTouchIdx = idx;
+}
+function skuTouchMove(e) {
+  if (skuTouchIdx === -1) return;
+  e.preventDefault();
+  const touchY = e.touches[0].clientY;
+  document.querySelectorAll('#skuListContainer .dd-item').forEach((item, i) => {
+    const rect = item.getBoundingClientRect();
+    if (touchY > rect.top && touchY < rect.bottom && i !== skuTouchIdx) {
+      const moved = editSkuList.splice(skuTouchIdx, 1)[0];
+      editSkuList.splice(i, 0, moved);
+      skuTouchIdx = i;
+      document.getElementById('modalBody').innerHTML = renderListEdit('sku');
+    }
+  });
+}
+function skuTouchEnd(e) { skuTouchIdx = -1; }
+
 function addListItem(type) {
-  const inp = document.getElementById(type + 'NewInput');
+  const inp = document.getElementById('skuNewInput');
   const val = inp.value.trim();
   if (!val) return;
-  if (type === 'focus' && editFocusList.length >= 4) { showToast('Focus 4SKU สูงสุด 4 รายการ', true); return; }
-  if (type === 'sku') editSkuList.push(val);
-  else editFocusList.push(val);
+  editSkuList.push(val);
   inp.value = '';
-  document.getElementById('modalBody').innerHTML = renderListEdit(type);
+  document.getElementById('modalBody').innerHTML = renderListEdit('sku');
 }
 
 function delListItem(type, idx) {
-  if (type === 'sku') editSkuList.splice(idx, 1);
-  else editFocusList.splice(idx, 1);
-  document.getElementById('modalBody').innerHTML = renderListEdit(type);
+  editSkuList.splice(idx, 1);
+  document.getElementById('modalBody').innerHTML = renderListEdit('sku');
 }
 
 function editListItem(type, idx, el) {
-  if (type === 'sku') editSkuList[idx] = el.textContent.trim();
-  else editFocusList[idx] = el.textContent.trim();
+  editSkuList[idx] = el.textContent.trim();
 }
 
 async function saveList(type) {
