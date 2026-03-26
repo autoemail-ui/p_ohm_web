@@ -58,12 +58,13 @@ function handleSubmit(data) {
 
   var tLastRow = targetSheet.getLastRow();
   if (tLastRow >= 2) {
-    var tRows = targetSheet.getRange(2, 1, tLastRow - 1, 7).getValues();
-    for (var ti = 0; ti < tRows.length; ti++) {
-      if (String(tRows[ti][0]).trim() === targetKey) {
-        var colMap = { 'Morning': [1,4], 'Afternoon': [2,5], 'Night': [3,6] };
-        salesTarget = Number(tRows[ti][colMap[shiftSuffix][0]]) || 0;
-        perHeadTarget = Number(tRows[ti][colMap[shiftSuffix][1]]) || 0;
+    var tKeys = targetSheet.getRange(2, 1, tLastRow - 1, 1).getDisplayValues();
+    var tVals = targetSheet.getRange(2, 2, tLastRow - 1, 6).getValues();
+    for (var ti = 0; ti < tKeys.length; ti++) {
+      if (tKeys[ti][0].trim() === targetKey) {
+        var colMap = { 'Morning': [0,3], 'Afternoon': [1,4], 'Night': [2,5] };
+        salesTarget = Number(tVals[ti][colMap[shiftSuffix][0]]) || 0;
+        perHeadTarget = Number(tVals[ti][colMap[shiftSuffix][1]]) || 0;
         break;
       }
     }
@@ -155,16 +156,17 @@ function handleGetTargets(data) {
   var result = { salesMorning: 0, salesAfternoon: 0, salesNight: 0, perHeadMorning: 0, perHeadAfternoon: 0, perHeadNight: 0 };
 
   if (lastRow >= 2) {
-    const rows = targetSheet.getRange(2, 1, lastRow - 1, 7).getValues();
-    for (var i = 0; i < rows.length; i++) {
-      if (String(rows[i][0]).trim() === key) {
+    const keys = targetSheet.getRange(2, 1, lastRow - 1, 1).getDisplayValues();
+    const vals = targetSheet.getRange(2, 2, lastRow - 1, 6).getValues();
+    for (var i = 0; i < keys.length; i++) {
+      if (keys[i][0].trim() === key) {
         result = {
-          salesMorning: Number(rows[i][1]) || 0,
-          salesAfternoon: Number(rows[i][2]) || 0,
-          salesNight: Number(rows[i][3]) || 0,
-          perHeadMorning: Number(rows[i][4]) || 0,
-          perHeadAfternoon: Number(rows[i][5]) || 0,
-          perHeadNight: Number(rows[i][6]) || 0
+          salesMorning: Number(vals[i][0]) || 0,
+          salesAfternoon: Number(vals[i][1]) || 0,
+          salesNight: Number(vals[i][2]) || 0,
+          perHeadMorning: Number(vals[i][3]) || 0,
+          perHeadAfternoon: Number(vals[i][4]) || 0,
+          perHeadNight: Number(vals[i][5]) || 0
         };
         break;
       }
@@ -184,9 +186,9 @@ function handleSaveTargets(data) {
   var foundRow = -1;
 
   if (lastRow >= 2) {
-    const keys = targetSheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    const keys = targetSheet.getRange(2, 1, lastRow - 1, 1).getDisplayValues();
     for (var i = 0; i < keys.length; i++) {
-      if (String(keys[i][0]).trim() === key) {
+      if (keys[i][0].trim() === key) {
         foundRow = i + 2;
         break;
       }
