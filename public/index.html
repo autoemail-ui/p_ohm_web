@@ -290,6 +290,11 @@ opacity:0;pointer-events:none;
   </div>
 
   <div class="card">
+    <div class="card-title"><span>👥</span> ทีมงานในผลัด</div>
+    <div id="teamChips" class="team-chips"></div>
+  </div>
+
+  <div class="card">
     <div class="card-title"><span>📅</span> วันที่ & ผลัด</div>
     <div class="form-group">
       <label>วันที่</label>
@@ -323,11 +328,6 @@ opacity:0;pointer-events:none;
       <label>ยอด TM (Wallet)</label>
       <input type="text" id="tmInput" inputmode="numeric" placeholder="0">
     </div>
-  </div>
-
-  <div class="card">
-    <div class="card-title"><span>👥</span> ทีมงานในผลัด</div>
-    <div id="teamChips" class="team-chips"></div>
   </div>
 
   <button class="btn-submit" id="submitBtn" onclick="submitForm()">
@@ -575,7 +575,17 @@ function renderMenu() {
       <div class="menu-item" onclick="openTargetEdit()">
         <div class="menu-icon">🎯</div>
         <div><div class="menu-label">แก้ไขเป้าหมายยอด</div>
-        <div class="menu-desc">เป้ายอดขาย และเป้ายอดต่อหัว</div></div>
+        <div class="menu-desc">เป้ายอดขาย เป้าต่อหัว เป้า All Cafee</div></div>
+      </div>
+      <div class="menu-item" onclick="openSkuEdit()">
+        <div class="menu-icon">📦</div>
+        <div><div class="menu-label">แก้ไข SKU</div>
+        <div class="menu-desc">เพิ่ม ลบ แก้ไขรายการ SKU</div></div>
+      </div>
+      <div class="menu-item" onclick="openFocusEdit()">
+        <div class="menu-icon">⭐</div>
+        <div><div class="menu-label">แก้ไข Focus 4SKU</div>
+        <div class="menu-desc">4 รายการที่เน้นขาย</div></div>
       </div>
     </div>
   `;
@@ -774,16 +784,23 @@ function renderTargetEdit(t) {
       ${renderShiftRow('perHead', 'บ่าย', 'Afternoon', t.perHeadAfternoon, 'purple')}
       ${renderShiftRow('perHead', 'ดึก', 'Night', t.perHeadNight, 'purple')}
     </div>
+    <div class="target-card">
+      <div class="target-label">☕ เป้ายอด All Cafee</div>
+      ${renderShiftRow('cafee', 'เช้า', 'Morning', t.cafeeMorning, 'orange')}
+      ${renderShiftRow('cafee', 'บ่าย', 'Afternoon', t.cafeeAfternoon, 'orange')}
+      ${renderShiftRow('cafee', 'ดึก', 'Night', t.cafeeNight, 'orange')}
+    </div>
     <button class="dd-save" onclick="saveAllTargets()" id="saveTargetBtn">💾 บันทึกเป้าหมาย</button>
   `;
 }
 
 function renderShiftRow(type, label, suffix, value, color) {
   const id = type + suffix;
+  const colorVar = color === 'blue' ? 'primary' : color === 'purple' ? 'accent' : 'warning';
   return `
     <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
       <span style="font-size:13px;color:var(--text2);width:32px;flex-shrink:0">${label}</span>
-      <span class="target-val-${id}" style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:var(--${color==='blue'?'primary':'accent'});min-width:60px">${Number(value).toLocaleString('en-US')}</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:var(--${colorVar});min-width:60px">${Number(value).toLocaleString('en-US')}</span>
       <input type="text" id="${id}" inputmode="numeric" placeholder="ยอดใหม่" style="flex:1;padding:8px 10px;font-size:14px">
     </div>
   `;
@@ -805,7 +822,10 @@ async function saveAllTargets() {
     salesNight: getVal('salesNight', currentTargets.salesNight),
     perHeadMorning: getVal('perHeadMorning', currentTargets.perHeadMorning),
     perHeadAfternoon: getVal('perHeadAfternoon', currentTargets.perHeadAfternoon),
-    perHeadNight: getVal('perHeadNight', currentTargets.perHeadNight)
+    perHeadNight: getVal('perHeadNight', currentTargets.perHeadNight),
+    cafeeMorning: getVal('cafeeMorning', currentTargets.cafeeMorning),
+    cafeeAfternoon: getVal('cafeeAfternoon', currentTargets.cafeeAfternoon),
+    cafeeNight: getVal('cafeeNight', currentTargets.cafeeNight)
   };
 
   const key = targetYear + '-' + String(targetMonth).padStart(2, '0');
@@ -827,6 +847,89 @@ async function saveAllTargets() {
     btn.disabled = false;
     btn.innerHTML = '💾 บันทึกเป้าหมาย';
   }
+}
+
+async function openSkuEdit() {
+  showModal('แก้ไข SKU', '<div class="loading-box"><div class="inline-spinner"></div>กำลังโหลด...</div>');
+  try {
+    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'getSku' }) });
+    const data = await res.json();
+    if (data.success) {
+      editSkuList = data.skus || [];
+      showModal('แก้ไข SKU', renderListEdit('sku'));
+    }
+  } catch (e) { showToast('เกิดข้อผิดพลาด', true); }
+}
+
+async function openFocusEdit() {
+  showModal('แก้ไข Focus 4SKU', '<div class="loading-box"><div class="inline-spinner"></div>กำลังโหลด...</div>');
+  try {
+    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'getFocus' }) });
+    const data = await res.json();
+    if (data.success) {
+      editFocusList = data.focus || [];
+      showModal('แก้ไข Focus 4SKU', renderListEdit('focus'));
+    }
+  } catch (e) { showToast('เกิดข้อผิดพลาด', true); }
+}
+
+var editSkuList = [];
+var editFocusList = [];
+
+function renderListEdit(type) {
+  const list = type === 'sku' ? editSkuList : editFocusList;
+  const maxItems = type === 'focus' ? 4 : 999;
+  const items = list.map((item, i) => `
+    <div class="dd-item">
+      <div class="dd-name" contenteditable="true" onblur="editListItem('${type}',${i},this)">${item}</div>
+      <button class="dd-del" onclick="delListItem('${type}',${i})">✕</button>
+    </div>
+  `).join('');
+
+  const addDisabled = type === 'focus' && list.length >= 4;
+  return `
+    <div>${items}</div>
+    ${type === 'focus' ? `<div style="color:var(--text3);font-size:12px;margin-bottom:8px">สูงสุด 4 รายการ (${list.length}/4)</div>` : ''}
+    <div class="dd-add">
+      <input type="text" id="${type}NewInput" placeholder="เพิ่มรายการ..." onkeydown="if(event.key==='Enter')addListItem('${type}')" ${addDisabled ? 'disabled' : ''}>
+      <button onclick="addListItem('${type}')" ${addDisabled ? 'disabled' : ''}>เพิ่ม</button>
+    </div>
+    <button class="dd-save" onclick="saveList('${type}')">💾 บันทึก</button>
+  `;
+}
+
+function addListItem(type) {
+  const inp = document.getElementById(type + 'NewInput');
+  const val = inp.value.trim();
+  if (!val) return;
+  if (type === 'focus' && editFocusList.length >= 4) { showToast('Focus 4SKU สูงสุด 4 รายการ', true); return; }
+  if (type === 'sku') editSkuList.push(val);
+  else editFocusList.push(val);
+  inp.value = '';
+  document.getElementById('modalBody').innerHTML = renderListEdit(type);
+}
+
+function delListItem(type, idx) {
+  if (type === 'sku') editSkuList.splice(idx, 1);
+  else editFocusList.splice(idx, 1);
+  document.getElementById('modalBody').innerHTML = renderListEdit(type);
+}
+
+function editListItem(type, idx, el) {
+  if (type === 'sku') editSkuList[idx] = el.textContent.trim();
+  else editFocusList[idx] = el.textContent.trim();
+}
+
+async function saveList(type) {
+  const btn = document.querySelector('.dd-save');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="inline-spinner" style="border-top-color:#fff"></div> กำลังบันทึก...'; }
+  const action = type === 'sku' ? 'saveSku' : 'saveFocus';
+  const payload = type === 'sku' ? { action, skus: editSkuList } : { action, focus: editFocusList };
+  try {
+    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const data = await res.json();
+    if (data.success) { showToast('บันทึกสำเร็จ ✅'); closeModal(); }
+  } catch (e) { showToast('เกิดข้อผิดพลาด', true); }
 }
 
 new MutationObserver(() => {

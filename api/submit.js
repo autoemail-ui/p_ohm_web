@@ -2,7 +2,6 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -12,30 +11,26 @@ export default async function handler(req, res) {
 
   try {
     const body = req.body;
-
     const gasRes = await fetch(GAS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
       redirect: 'follow'
     });
-
     const gasData = await gasRes.json();
 
     if (body.action === 'submit' && gasData.success) {
       const d = gasData.data;
-      const flexMessage = buildFlexMessage(d);
+      const messages = [buildFlexMessage(d)];
+
+      if (d.dailySummary) {
+        messages.push(buildDailySummaryFlex(d.dailySummary, d.skuList, d.focusList));
+      }
 
       await fetch('https://api.line.me/v2/bot/message/push', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${LINE_TOKEN}`
-        },
-        body: JSON.stringify({
-          to: LINE_GROUP_ID,
-          messages: [flexMessage]
-        })
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${LINE_TOKEN}` },
+        body: JSON.stringify({ to: LINE_GROUP_ID, messages })
       });
     }
 
@@ -50,268 +45,188 @@ function buildFlexMessage(d) {
   const salesBar = Math.min(Number(d.salesPercent), 100);
   const perHeadBar = Math.min(Number(d.perHeadPercent), 100);
 
+  var bodyContents = [];
+
+  bodyContents.push({
+    type: 'box', layout: 'horizontal', contents: [
+      { type: 'text', text: '👥 ทีมงาน', size: 'sm', color: '#6B7280', flex: 1 },
+      { type: 'text', text: d.team || '-', size: 'sm', color: '#F1F5F9', align: 'end', flex: 2, wrap: true, weight: 'bold' }
+    ]
+  });
+  bodyContents.push({ type: 'separator', margin: 'lg', color: '#E5E7EB' });
+
+  bodyContents.push({
+    type: 'box', layout: 'horizontal', spacing: 'md', margin: 'lg', contents: [
+      buildStatBox('สินค้า', formatNum(d.product), '#1A56DB'),
+      buildStatBox('บัตร', formatNum(d.card), '#7C3AED'),
+      buildStatBox('ลูกค้า', formatNum(d.customers), '#059669')
+    ]
+  });
+
+  bodyContents.push({ type: 'separator', margin: 'xl', color: '#E5E7EB' });
+  bodyContents.push({
+    type: 'box', layout: 'horizontal', margin: 'xl', contents: [
+      { type: 'text', text: '💰 ยอดรวม', size: 'md', color: '#374151', flex: 1 },
+      { type: 'text', text: formatNum(d.total), size: 'xl', weight: 'bold', color: '#1A56DB', align: 'end', flex: 1 }
+    ]
+  });
+  bodyContents.push(buildProgressBar('เป้ายอดขาย', d.salesPercent, salesBar, formatNum(d.salesTarget)));
+
+  bodyContents.push({ type: 'separator', margin: 'xl', color: '#E5E7EB' });
+  bodyContents.push({
+    type: 'box', layout: 'horizontal', margin: 'xl', contents: [
+      { type: 'text', text: '👤 ต่อหัว', size: 'md', color: '#374151', flex: 1 },
+      { type: 'text', text: formatNum(d.perHead), size: 'xl', weight: 'bold', color: '#7C3AED', align: 'end', flex: 1 }
+    ]
+  });
+  bodyContents.push(buildProgressBar('เป้าต่อหัว', d.perHeadPercent, perHeadBar, formatNum(d.perHeadTarget)));
+
+  bodyContents.push({ type: 'separator', margin: 'xl', color: '#E5E7EB' });
+  bodyContents.push({
+    type: 'box', layout: 'horizontal', margin: 'xl', contents: [
+      { type: 'text', text: '💳 Wallet (TM)', size: 'md', color: '#374151', flex: 2 },
+      { type: 'text', text: `${formatNum(d.tm)} / ${d.walletPercent}%`, size: 'md', weight: 'bold', color: '#059669', align: 'end', flex: 2 }
+    ]
+  });
+
+  if (d.allCafeeTarget > 0) {
+    bodyContents.push({ type: 'separator', margin: 'xl', color: '#E5E7EB' });
+    bodyContents.push({
+      type: 'box', layout: 'horizontal', margin: 'xl', contents: [
+        { type: 'text', text: '☕ เป้า All Cafee', size: 'sm', color: '#6B7280', flex: 2 },
+        { type: 'text', text: formatNum(d.allCafeeTarget), size: 'md', weight: 'bold', color: '#D97706', align: 'end', flex: 1 }
+      ]
+    });
+  }
+
+  if (d.focusList && d.focusList.length > 0) {
+    bodyContents.push({ type: 'separator', margin: 'xl', color: '#E5E7EB' });
+    bodyContents.push({ type: 'text', text: '🎯 Focus 4SKU', size: 'sm', color: '#6B7280', margin: 'xl' });
+    bodyContents.push({
+      type: 'box', layout: 'vertical', margin: 'sm', contents: d.focusList.map(f => ({
+        type: 'text', text: '• ' + f, size: 'sm', color: '#F59E0B', margin: 'xs'
+      }))
+    });
+  }
+
+  if (d.skuList && d.skuList.length > 0) {
+    bodyContents.push({ type: 'separator', margin: 'xl', color: '#E5E7EB' });
+    bodyContents.push({ type: 'text', text: '📦 รายการ SKU', size: 'sm', color: '#6B7280', margin: 'xl' });
+    bodyContents.push({
+      type: 'box', layout: 'vertical', margin: 'sm', contents: d.skuList.map(s => ({
+        type: 'text', text: '• ' + s, size: 'xs', color: '#94A3B8', margin: 'xs'
+      }))
+    });
+  }
+
   return {
     type: 'flex',
     altText: `📊 ยอดขายผลัด${d.shift} ${d.date}`,
     contents: {
-      type: 'bubble',
-      size: 'giga',
+      type: 'bubble', size: 'giga',
       header: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'box',
-            layout: 'horizontal',
-            contents: [
-              {
-                type: 'text',
-                text: '📊 รายงานยอดขาย',
-                weight: 'bold',
-                color: '#FFFFFF',
-                size: 'lg',
-                flex: 0
-              }
-            ]
-          },
-          {
-            type: 'text',
-            text: `${d.date} | ผลัด${d.shift} ${shiftEmoji}`,
-            color: '#FFFFFFCC',
-            size: 'sm',
-            margin: 'sm'
-          }
-        ],
-        backgroundColor: '#1A56DB',
-        paddingAll: '20px'
+        type: 'box', layout: 'vertical', backgroundColor: '#1A56DB', paddingAll: '20px', contents: [
+          { type: 'text', text: '📊 รายงานยอดขาย', weight: 'bold', color: '#FFFFFF', size: 'lg' },
+          { type: 'text', text: `${d.date} | ผลัด${d.shift} ${shiftEmoji}`, color: '#FFFFFFCC', size: 'sm', margin: 'sm' }
+        ]
       },
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'box',
-            layout: 'horizontal',
-            contents: [
-              buildStatBox('สินค้า', formatNum(d.product), '#1A56DB'),
-              buildStatBox('บัตร', formatNum(d.card), '#7C3AED'),
-              buildStatBox('ลูกค้า', formatNum(d.customers), '#059669')
-            ],
-            spacing: 'md'
-          },
-          {
-            type: 'separator',
-            margin: 'xl',
-            color: '#E5E7EB'
-          },
-          {
-            type: 'box',
-            layout: 'horizontal',
-            contents: [
-              {
-                type: 'text',
-                text: '💰 ยอดรวม',
-                size: 'md',
-                color: '#374151',
-                flex: 1
-              },
-              {
-                type: 'text',
-                text: formatNum(d.total),
-                size: 'xl',
-                weight: 'bold',
-                color: '#1A56DB',
-                align: 'end',
-                flex: 1
-              }
-            ],
-            margin: 'xl'
-          },
-          buildProgressBar('เป้ายอดขาย', d.salesPercent, salesBar, formatNum(d.salesTarget)),
-          {
-            type: 'separator',
-            margin: 'xl',
-            color: '#E5E7EB'
-          },
-          {
-            type: 'box',
-            layout: 'horizontal',
-            contents: [
-              {
-                type: 'text',
-                text: '👤 ต่อหัว',
-                size: 'md',
-                color: '#374151',
-                flex: 1
-              },
-              {
-                type: 'text',
-                text: formatNum(d.perHead),
-                size: 'xl',
-                weight: 'bold',
-                color: '#7C3AED',
-                align: 'end',
-                flex: 1
-              }
-            ],
-            margin: 'xl'
-          },
-          buildProgressBar('เป้าต่อหัว', d.perHeadPercent, perHeadBar, formatNum(d.perHeadTarget)),
-          {
-            type: 'separator',
-            margin: 'xl',
-            color: '#E5E7EB'
-          },
-          {
-            type: 'box',
-            layout: 'horizontal',
-            contents: [
-              {
-                type: 'text',
-                text: '💳 Wallet (TM)',
-                size: 'md',
-                color: '#374151',
-                flex: 2
-              },
-              {
-                type: 'text',
-                text: `${formatNum(d.tm)} / ${d.walletPercent}%`,
-                size: 'md',
-                weight: 'bold',
-                color: '#059669',
-                align: 'end',
-                flex: 2
-              }
-            ],
-            margin: 'xl'
-          },
-          {
-            type: 'separator',
-            margin: 'xl',
-            color: '#E5E7EB'
-          },
-          {
-            type: 'box',
-            layout: 'horizontal',
-            contents: [
-              {
-                type: 'text',
-                text: '👥 ทีมงาน',
-                size: 'sm',
-                color: '#6B7280',
-                flex: 1
-              },
-              {
-                type: 'text',
-                text: d.team || '-',
-                size: 'sm',
-                color: '#374151',
-                align: 'end',
-                flex: 2,
-                wrap: true
-              }
-            ],
-            margin: 'xl'
-          }
-        ],
-        paddingAll: '20px'
-      },
+      body: { type: 'box', layout: 'vertical', paddingAll: '20px', contents: bodyContents },
       footer: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
-            text: `#${d.runningNo}`,
-            size: 'xs',
-            color: '#9CA3AF',
-            align: 'end'
-          }
-        ],
-        paddingAll: '12px',
-        backgroundColor: '#F9FAFB'
+        type: 'box', layout: 'vertical', paddingAll: '12px', backgroundColor: '#F9FAFB', contents: [
+          { type: 'text', text: `#${d.runningNo}`, size: 'xs', color: '#9CA3AF', align: 'end' }
+        ]
       }
+    }
+  };
+}
+
+function buildDailySummaryFlex(s, skuList, focusList) {
+  const salesBar = Math.min(Number(s.salesPercent), 100);
+  const perHeadBar = Math.min(Number(s.perHeadPercent), 100);
+
+  var bodyContents = [
+    {
+      type: 'box', layout: 'horizontal', spacing: 'md', contents: [
+        buildStatBox('สินค้า', formatNum(s.product), '#1A56DB'),
+        buildStatBox('บัตร', formatNum(s.card), '#7C3AED'),
+        buildStatBox('ลูกค้า', formatNum(s.customers), '#059669')
+      ]
+    },
+    { type: 'separator', margin: 'xl', color: '#E5E7EB' },
+    {
+      type: 'box', layout: 'horizontal', margin: 'xl', contents: [
+        { type: 'text', text: '💰 ยอดรวมทั้งวัน', size: 'md', color: '#374151', flex: 2 },
+        { type: 'text', text: formatNum(s.total), size: 'xl', weight: 'bold', color: '#1A56DB', align: 'end', flex: 1 }
+      ]
+    },
+    buildProgressBar('เป้ารวมวัน', s.salesPercent, salesBar, formatNum(s.salesTarget)),
+    { type: 'separator', margin: 'xl', color: '#E5E7EB' },
+    {
+      type: 'box', layout: 'horizontal', margin: 'xl', contents: [
+        { type: 'text', text: '👤 ต่อหัวเฉลี่ย', size: 'md', color: '#374151', flex: 1 },
+        { type: 'text', text: formatNum(s.perHead), size: 'xl', weight: 'bold', color: '#7C3AED', align: 'end', flex: 1 }
+      ]
+    },
+    buildProgressBar('เป้าต่อหัวรวม', s.perHeadPercent, perHeadBar, formatNum(s.perHeadTarget)),
+    { type: 'separator', margin: 'xl', color: '#E5E7EB' },
+    {
+      type: 'box', layout: 'horizontal', margin: 'xl', contents: [
+        { type: 'text', text: '💳 Wallet รวม', size: 'md', color: '#374151', flex: 2 },
+        { type: 'text', text: `${formatNum(s.tm)} / ${s.walletPercent}%`, size: 'md', weight: 'bold', color: '#059669', align: 'end', flex: 2 }
+      ]
+    }
+  ];
+
+  if (s.allCafeeTarget > 0) {
+    bodyContents.push({ type: 'separator', margin: 'xl', color: '#E5E7EB' });
+    bodyContents.push({
+      type: 'box', layout: 'horizontal', margin: 'xl', contents: [
+        { type: 'text', text: '☕ เป้า All Cafee รวม', size: 'sm', color: '#6B7280', flex: 2 },
+        { type: 'text', text: formatNum(s.allCafeeTarget), size: 'md', weight: 'bold', color: '#D97706', align: 'end', flex: 1 }
+      ]
+    });
+  }
+
+  return {
+    type: 'flex',
+    altText: `📋 สรุปยอดขายทั้งวัน ${s.date}`,
+    contents: {
+      type: 'bubble', size: 'giga',
+      header: {
+        type: 'box', layout: 'vertical', backgroundColor: '#7C3AED', paddingAll: '20px', contents: [
+          { type: 'text', text: '📋 สรุปยอดขายทั้งวัน', weight: 'bold', color: '#FFFFFF', size: 'lg' },
+          { type: 'text', text: `${s.date} | ผลัด: ${s.shifts.join(', ')}`, color: '#FFFFFFCC', size: 'sm', margin: 'sm' }
+        ]
+      },
+      body: { type: 'box', layout: 'vertical', paddingAll: '20px', contents: bodyContents }
     }
   };
 }
 
 function buildStatBox(label, value, color) {
   return {
-    type: 'box',
-    layout: 'vertical',
-    contents: [
-      {
-        type: 'text',
-        text: label,
-        size: 'xs',
-        color: '#6B7280',
-        align: 'center'
-      },
-      {
-        type: 'text',
-        text: value,
-        size: 'lg',
-        weight: 'bold',
-        color: color,
-        align: 'center',
-        margin: 'xs'
-      }
-    ],
-    flex: 1,
-    backgroundColor: color + '0D',
-    cornerRadius: '8px',
-    paddingAll: '12px'
+    type: 'box', layout: 'vertical', flex: 1, backgroundColor: color + '0D', cornerRadius: '8px', paddingAll: '12px', contents: [
+      { type: 'text', text: label, size: 'xs', color: '#6B7280', align: 'center' },
+      { type: 'text', text: value, size: 'lg', weight: 'bold', color: color, align: 'center', margin: 'xs' }
+    ]
   };
 }
 
 function buildProgressBar(label, percent, barWidth, targetVal) {
   return {
-    type: 'box',
-    layout: 'vertical',
-    contents: [
+    type: 'box', layout: 'vertical', margin: 'md', contents: [
       {
-        type: 'box',
-        layout: 'horizontal',
-        contents: [
-          {
-            type: 'text',
-            text: `${label}: ${targetVal}`,
-            size: 'xs',
-            color: '#6B7280',
-            flex: 2
-          },
-          {
-            type: 'text',
-            text: `${percent}%`,
-            size: 'xs',
-            weight: 'bold',
-            color: Number(percent) >= 100 ? '#059669' : '#DC2626',
-            align: 'end',
-            flex: 1
-          }
+        type: 'box', layout: 'horizontal', contents: [
+          { type: 'text', text: `${label}: ${targetVal}`, size: 'xs', color: '#6B7280', flex: 2 },
+          { type: 'text', text: `${percent}%`, size: 'xs', weight: 'bold', color: Number(percent) >= 100 ? '#059669' : '#DC2626', align: 'end', flex: 1 }
         ]
       },
       {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'box',
-            layout: 'vertical',
-            contents: [],
-            backgroundColor: Number(percent) >= 100 ? '#059669' : '#3B82F6',
-            height: '6px',
-            width: barWidth + '%',
-            cornerRadius: '3px'
-          }
-        ],
-        backgroundColor: '#E5E7EB',
-        height: '6px',
-        margin: 'sm',
-        cornerRadius: '3px'
+        type: 'box', layout: 'vertical', backgroundColor: '#E5E7EB', height: '6px', margin: 'sm', cornerRadius: '3px', contents: [
+          { type: 'box', layout: 'vertical', backgroundColor: Number(percent) >= 100 ? '#059669' : '#3B82F6', height: '6px', width: barWidth + '%', cornerRadius: '3px', contents: [] }
+        ]
       }
-    ],
-    margin: 'md'
+    ]
   };
 }
 
