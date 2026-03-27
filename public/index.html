@@ -328,6 +328,15 @@ opacity:0;pointer-events:none;
       <label>ยอด TM (Wallet)</label>
       <input type="text" id="tmInput" inputmode="numeric" placeholder="0">
     </div>
+    <div class="form-group">
+      <label>☕ ยอด All Cafee</label>
+      <input type="text" id="allCafeeInput" inputmode="numeric" placeholder="0">
+    </div>
+  </div>
+
+  <div class="card" id="focusSkuCard" style="display:none">
+    <div class="card-title"><span>⭐</span> ยอด Focus SKU</div>
+    <div id="focusSkuInputs"></div>
   </div>
 
   <button class="btn-submit" id="submitBtn" onclick="submitForm()">
@@ -369,6 +378,7 @@ flatpickr('#dateInput', {
 });
 
 loadDropdown();
+loadFocusInputs();
 
 function selectShift(el) {
   document.querySelectorAll('.shift-btn').forEach(b => b.classList.remove('active'));
@@ -432,6 +442,40 @@ document.querySelectorAll('input[inputmode="numeric"]').forEach(inp => {
   inp.addEventListener('input', () => formatInput(inp));
 });
 
+var currentFocusList = [];
+
+function loadFocusInputs() {
+  fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'getFocus' })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      currentFocusList = data.focus || [];
+      renderFocusInputs();
+    }
+  })
+  .catch(() => {});
+}
+
+function renderFocusInputs() {
+  const card = document.getElementById('focusSkuCard');
+  const container = document.getElementById('focusSkuInputs');
+  if (currentFocusList.length === 0) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  container.innerHTML = currentFocusList.map((name, i) => `
+    <div class="form-group">
+      <label>⭐ ${name}</label>
+      <input type="text" id="focusSku_${i}" inputmode="numeric" placeholder="0">
+    </div>
+  `).join('');
+  container.querySelectorAll('input[inputmode="numeric"]').forEach(inp => {
+    inp.addEventListener('input', () => formatInput(inp));
+  });
+}
+
 async function submitForm() {
   const btn = document.getElementById('submitBtn');
   const date = document.getElementById('dateInput').value;
@@ -439,7 +483,13 @@ async function submitForm() {
   const card = parseNumber(document.getElementById('cardInput').value);
   const customers = parseNumber(document.getElementById('customerInput').value);
   const tm = parseNumber(document.getElementById('tmInput').value);
+  const allCafee = parseNumber(document.getElementById('allCafeeInput').value);
   const team = selectedTeam.join(', ');
+
+  const focusValues = {};
+  currentFocusList.forEach((name, i) => {
+    focusValues[name] = parseNumber(document.getElementById('focusSku_' + i)?.value);
+  });
 
   if (!date) { showToast('กรุณาเลือกวันที่', true); return; }
   if (product === 0 && card === 0) { showToast('กรุณากรอกยอดขาย', true); return; }
@@ -454,7 +504,7 @@ async function submitForm() {
       body: JSON.stringify({
         action: 'submit',
         date, shift: currentShift,
-        product, card, customers, tm, team
+        product, card, customers, tm, allCafee, team, focusValues
       })
     });
     const data = await res.json();
@@ -464,6 +514,8 @@ async function submitForm() {
       document.getElementById('cardInput').value = '';
       document.getElementById('customerInput').value = '';
       document.getElementById('tmInput').value = '';
+      document.getElementById('allCafeeInput').value = '';
+      currentFocusList.forEach((_, i) => { const el = document.getElementById('focusSku_' + i); if (el) el.value = ''; });
       selectedTeam = [];
       renderTeamChips();
     } else {

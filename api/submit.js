@@ -89,22 +89,30 @@ function buildFlexMessage(d) {
     ]
   });
 
-  if (d.allCafeeTarget > 0) {
+  if (d.allCafeeTarget > 0 || d.allCafee > 0) {
     bodyContents.push({ type: 'separator', margin: 'xl', color: '#E5E7EB' });
     bodyContents.push({
       type: 'box', layout: 'horizontal', margin: 'xl', contents: [
-        { type: 'text', text: '☕ เป้า All Cafee', size: 'sm', color: '#6B7280', flex: 2 },
-        { type: 'text', text: formatNum(d.allCafeeTarget), size: 'md', weight: 'bold', color: '#D97706', align: 'end', flex: 1 }
+        { type: 'text', text: '☕ All Cafee', size: 'md', color: '#374151', flex: 2 },
+        { type: 'text', text: formatNum(d.allCafee), size: 'xl', weight: 'bold', color: '#D97706', align: 'end', flex: 1 }
       ]
     });
+    if (d.allCafeeTarget > 0) {
+      const cafeeBar = Math.min(Number(d.allCafeePercent), 100);
+      bodyContents.push(buildProgressBar('เป้า All Cafee', d.allCafeePercent, cafeeBar, formatNum(d.allCafeeTarget)));
+    }
   }
 
   if (d.focusList && d.focusList.length > 0) {
     bodyContents.push({ type: 'separator', margin: 'xl', color: '#E5E7EB' });
     bodyContents.push({ type: 'text', text: '🎯 Focus 4SKU', size: 'sm', color: '#6B7280', margin: 'xl' });
+    const fv = d.focusValues || {};
     bodyContents.push({
       type: 'box', layout: 'vertical', margin: 'sm', contents: d.focusList.map(f => ({
-        type: 'text', text: '• ' + f, size: 'sm', color: '#F59E0B', margin: 'xs'
+        type: 'box', layout: 'horizontal', margin: 'xs', contents: [
+          { type: 'text', text: '• ' + f, size: 'sm', color: '#F59E0B', flex: 3 },
+          { type: 'text', text: fv[f] ? formatNum(fv[f]) : '-', size: 'sm', weight: 'bold', color: '#F1F5F9', align: 'end', flex: 1 }
+        ]
       }))
     });
   }
@@ -177,13 +185,32 @@ function buildDailySummaryFlex(s, skuList, focusList) {
     }
   ];
 
-  if (s.allCafeeTarget > 0) {
+  if (s.allCafeeTarget > 0 || s.allCafee > 0) {
     bodyContents.push({ type: 'separator', margin: 'xl', color: '#E5E7EB' });
     bodyContents.push({
       type: 'box', layout: 'horizontal', margin: 'xl', contents: [
-        { type: 'text', text: '☕ เป้า All Cafee รวม', size: 'sm', color: '#6B7280', flex: 2 },
-        { type: 'text', text: formatNum(s.allCafeeTarget), size: 'md', weight: 'bold', color: '#D97706', align: 'end', flex: 1 }
+        { type: 'text', text: '☕ All Cafee รวม', size: 'md', color: '#374151', flex: 2 },
+        { type: 'text', text: formatNum(s.allCafee), size: 'xl', weight: 'bold', color: '#D97706', align: 'end', flex: 1 }
       ]
+    });
+    if (s.allCafeeTarget > 0) {
+      const cafeeBar = Math.min(Number(s.allCafeePercent), 100);
+      bodyContents.push(buildProgressBar('เป้า All Cafee', s.allCafeePercent, cafeeBar, formatNum(s.allCafeeTarget)));
+    }
+  }
+
+  const sfv = s.focusValues || {};
+  const sfvKeys = Object.keys(sfv);
+  if (sfvKeys.length > 0) {
+    bodyContents.push({ type: 'separator', margin: 'xl', color: '#E5E7EB' });
+    bodyContents.push({ type: 'text', text: '🎯 Focus 4SKU รวมวัน', size: 'sm', color: '#6B7280', margin: 'xl' });
+    bodyContents.push({
+      type: 'box', layout: 'vertical', margin: 'sm', contents: sfvKeys.map(k => ({
+        type: 'box', layout: 'horizontal', margin: 'xs', contents: [
+          { type: 'text', text: '• ' + k, size: 'sm', color: '#F59E0B', flex: 3 },
+          { type: 'text', text: formatNum(sfv[k]), size: 'sm', weight: 'bold', color: '#F1F5F9', align: 'end', flex: 1 }
+        ]
+      }))
     });
   }
 

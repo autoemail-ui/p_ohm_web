@@ -70,7 +70,13 @@ function handleSubmit(data) {
   var skuList = getColumnList(dbSheet, 3);
   var focusList = getColumnList(dbSheet, 4);
 
-  sheet.appendRow([runningNo, data.date, data.shift, Number(data.product), Number(data.card), total, Number(data.customers), perHead, Number(data.tm), walletPercent, data.team, new Date()]);
+  var allCafee = Number(data.allCafee) || 0;
+  var allCafeePercent = allCafeeTarget > 0 ? (allCafee / allCafeeTarget) * 100 : 0;
+
+  var focusValues = data.focusValues || {};
+  var focusJson = JSON.stringify(focusValues);
+
+  sheet.appendRow([runningNo, data.date, data.shift, Number(data.product), Number(data.card), total, Number(data.customers), perHead, Number(data.tm), walletPercent, data.team, allCafee, focusJson, new Date()]);
 
   var dailySummary = null;
   if (data.shift === 'ดึก') {
@@ -85,9 +91,10 @@ function handleSubmit(data) {
       customers: Number(data.customers), perHead: perHead.toFixed(2),
       tm: Number(data.tm), walletPercent: walletPercent.toFixed(2),
       team: data.team,
+      allCafee, allCafeeTarget, allCafeePercent: allCafeePercent.toFixed(2),
       salesTarget, salesPercent: salesPercent.toFixed(2),
       perHeadTarget, perHeadPercent: perHeadPercent.toFixed(2),
-      allCafeeTarget, skuList, focusList, dailySummary
+      focusValues, skuList, focusList, dailySummary
     }
   });
 }
@@ -97,15 +104,21 @@ function buildDailySummary(ss, dateStr, targetKey) {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return null;
   const dates = sheet.getRange(2, 2, lastRow - 1, 1).getDisplayValues();
-  const rows = sheet.getRange(2, 3, lastRow - 1, 9).getValues();
-  var tP = 0, tC = 0, tCust = 0, tTm = 0, shifts = [];
+  const rows = sheet.getRange(2, 3, lastRow - 1, 11).getValues();
+  var tP = 0, tC = 0, tCust = 0, tTm = 0, tAllCafee = 0, shifts = [];
+  var mergedFocus = {};
   for (var i = 0; i < dates.length; i++) {
     if (dates[i][0].trim() === dateStr) {
       tP += Number(rows[i][1]) || 0;
       tC += Number(rows[i][2]) || 0;
       tCust += Number(rows[i][4]) || 0;
       tTm += Number(rows[i][6]) || 0;
+      tAllCafee += Number(rows[i][9]) || 0;
       shifts.push(rows[i][0]);
+      try {
+        var fv = JSON.parse(rows[i][10] || '{}');
+        for (var k in fv) { mergedFocus[k] = (mergedFocus[k] || 0) + (Number(fv[k]) || 0); }
+      } catch(e) {}
     }
   }
   var gTotal = tP + tC;
@@ -127,13 +140,15 @@ function buildDailySummary(ss, dateStr, targetKey) {
       }
     }
   }
+  var allCafeePercent = dCafee > 0 ? (tAllCafee / dCafee * 100) : 0;
   return {
     date: dateStr, shifts: shifts, product: tP, card: tC, total: gTotal,
     customers: tCust, perHead: gPerHead.toFixed(2), tm: tTm,
     walletPercent: gWallet.toFixed(2),
     salesTarget: dSales, salesPercent: dSales > 0 ? (gTotal/dSales*100).toFixed(2) : '0.00',
     perHeadTarget: dPerHead, perHeadPercent: dPerHead > 0 ? (gPerHead/dPerHead*100).toFixed(2) : '0.00',
-    allCafeeTarget: dCafee
+    allCafee: tAllCafee, allCafeeTarget: dCafee, allCafeePercent: allCafeePercent.toFixed(2),
+    focusValues: mergedFocus
   };
 }
 
@@ -244,7 +259,7 @@ function setupSheets() {
   initSheetId();
   const ss = getSS();
   let s1 = ss.getSheetByName('ข้อมูลรวม');
-  if (!s1) { s1 = ss.insertSheet('ข้อมูลรวม'); s1.appendRow(['ลำดับ','วันที่','ผลัด','สินค้า','บัตร','รวม','ลูกค้า','ต่อหัว','TM','Wallet%','ทีมงาน','เวลาบันทึก']); }
+  if (!s1) { s1 = ss.insertSheet('ข้อมูลรวม'); s1.appendRow(['ลำดับ','วันที่','ผลัด','สินค้า','บัตร','รวม','ลูกค้า','ต่อหัว','TM','Wallet%','ทีมงาน','AllCafee','FocusSKU','เวลาบันทึก']); }
   let s2 = ss.getSheetByName('ยอดขาย');
   if (!s2) { s2 = ss.insertSheet('ยอดขาย'); s2.appendRow(['key(YYYY-MM)','เป้าขายเช้า','เป้าขายบ่าย','เป้าขายดึก','เป้าต่อหัวเช้า','เป้าต่อหัวบ่าย','เป้าต่อหัวดึก','AllCafeeเช้า','AllCafeeบ่าย','AllCafeeดึก','วันที่แก้ไข','รายละเอียด']); }
   let s3 = ss.getSheetByName('_database');
