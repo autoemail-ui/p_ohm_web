@@ -105,7 +105,7 @@ function buildDailySummary(ss, dateStr, targetKey) {
   if (lastRow < 2) return null;
   const dates = sheet.getRange(2, 2, lastRow - 1, 1).getDisplayValues();
   const rows = sheet.getRange(2, 3, lastRow - 1, 11).getValues();
-  var tP = 0, tC = 0, tCust = 0, tTm = 0, tAllCafee = 0, shifts = [];
+  var tP = 0, tC = 0, tCust = 0, tTm = 0, tAllOnline = 0, shifts = [];
   var mergedFocus = {};
   for (var i = 0; i < dates.length; i++) {
     if (dates[i][0].trim() === dateStr) {
@@ -113,7 +113,7 @@ function buildDailySummary(ss, dateStr, targetKey) {
       tC += Number(rows[i][2]) || 0;
       tCust += Number(rows[i][4]) || 0;
       tTm += Number(rows[i][6]) || 0;
-      tAllCafee += Number(rows[i][9]) || 0;
+      tAllOnline += Number(rows[i][9]) || 0;
       shifts.push(rows[i][0]);
       try {
         var fv = JSON.parse(rows[i][10] || '{}');
@@ -140,14 +140,14 @@ function buildDailySummary(ss, dateStr, targetKey) {
       }
     }
   }
-  var allCafeePercent = dCafee > 0 ? (tAllCafee / dCafee * 100) : 0;
+  var allCafeePercent = dCafee > 0 ? (tAllOnline / dCafee * 100) : 0;
   return {
     date: dateStr, shifts: shifts, product: tP, card: tC, total: gTotal,
     customers: tCust, perHead: gPerHead.toFixed(2), tm: tTm,
     walletPercent: gWallet.toFixed(2),
     salesTarget: dSales, salesPercent: dSales > 0 ? (gTotal/dSales*100).toFixed(2) : '0.00',
     perHeadTarget: dPerHead, perHeadPercent: dPerHead > 0 ? (gPerHead/dPerHead*100).toFixed(2) : '0.00',
-    allCafee: tAllCafee, allCafeeTarget: dCafee, allCafeePercent: allCafeePercent.toFixed(2),
+    allCafee: tAllOnline, allCafeeTarget: dCafee, allCafeePercent: allCafeePercent.toFixed(2),
     focusValues: mergedFocus
   };
 }
@@ -259,9 +259,9 @@ function setupSheets() {
   initSheetId();
   const ss = getSS();
   let s1 = ss.getSheetByName('ข้อมูลรวม');
-  if (!s1) { s1 = ss.insertSheet('ข้อมูลรวม'); s1.appendRow(['ลำดับ','วันที่','ผลัด','สินค้า','บัตร','รวม','ลูกค้า','ต่อหัว','TM','Wallet%','ทีมงาน','AllCafee','FocusSKU','เวลาบันทึก']); }
+  if (!s1) { s1 = ss.insertSheet('ข้อมูลรวม'); s1.appendRow(['ลำดับ','วันที่','ผลัด','สินค้า','บัตร','รวม','ลูกค้า','ต่อหัว','TM','Wallet%','ทีมงาน','AllOnline','FocusSKU','เวลาบันทึก']); }
   let s2 = ss.getSheetByName('ยอดขาย');
-  if (!s2) { s2 = ss.insertSheet('ยอดขาย'); s2.appendRow(['key(YYYY-MM)','เป้าขายเช้า','เป้าขายบ่าย','เป้าขายดึก','เป้าต่อหัวเช้า','เป้าต่อหัวบ่าย','เป้าต่อหัวดึก','AllCafeeเช้า','AllCafeeบ่าย','AllCafeeดึก','วันที่แก้ไข','รายละเอียด']); }
+  if (!s2) { s2 = ss.insertSheet('ยอดขาย'); s2.appendRow(['key(YYYY-MM)','เป้าขายเช้า','เป้าขายบ่าย','เป้าขายดึก','เป้าต่อหัวเช้า','เป้าต่อหัวบ่าย','เป้าต่อหัวดึก','AllOnlineเช้า','AllOnlineบ่าย','AllOnlineดึก','วันที่แก้ไข','รายละเอียด']); }
   let s3 = ss.getSheetByName('_database');
   if (!s3) { s3 = ss.insertSheet('_database'); s3.appendRow(['รันเลข','รายชื่อทีมงาน','SKU','Focus 4SKU']); s3.getRange('A2').setValue(0); }
 }

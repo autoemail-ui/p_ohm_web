@@ -48,9 +48,9 @@ function buildFlexMessage(d) {
   var bodyContents = [];
 
   bodyContents.push({
-    type: 'box', layout: 'horizontal', contents: [
-      { type: 'text', text: '👥 ทีมงาน', size: 'sm', color: '#6B7280', flex: 1 },
-      { type: 'text', text: d.team || '-', size: 'sm', color: '#F1F5F9', align: 'end', flex: 2, wrap: true, weight: 'bold' }
+    type: 'box', layout: 'vertical', backgroundColor: '#1E293B', cornerRadius: '10px', paddingAll: '14px', contents: [
+      { type: 'text', text: '👥 ทีมงานในผลัด', size: 'xs', color: '#94A3B8' },
+      { type: 'text', text: d.team || '-', size: 'lg', color: '#FFFFFF', weight: 'bold', wrap: true, margin: 'sm' }
     ]
   });
   bodyContents.push({ type: 'separator', margin: 'lg', color: '#E5E7EB' });
@@ -93,13 +93,13 @@ function buildFlexMessage(d) {
     bodyContents.push({ type: 'separator', margin: 'xl', color: '#E5E7EB' });
     bodyContents.push({
       type: 'box', layout: 'horizontal', margin: 'xl', contents: [
-        { type: 'text', text: '☕ All Cafee', size: 'md', color: '#374151', flex: 2 },
+        { type: 'text', text: '☕ All Online', size: 'md', color: '#374151', flex: 2 },
         { type: 'text', text: formatNum(d.allCafee), size: 'xl', weight: 'bold', color: '#D97706', align: 'end', flex: 1 }
       ]
     });
     if (d.allCafeeTarget > 0) {
       const cafeeBar = Math.min(Number(d.allCafeePercent), 100);
-      bodyContents.push(buildProgressBar('เป้า All Cafee', d.allCafeePercent, cafeeBar, formatNum(d.allCafeeTarget)));
+      bodyContents.push(buildProgressBar('เป้า All Online', d.allCafeePercent, cafeeBar, formatNum(d.allCafeeTarget)));
     }
   }
 
@@ -108,10 +108,10 @@ function buildFlexMessage(d) {
     bodyContents.push({ type: 'text', text: '🎯 Focus 4SKU', size: 'sm', color: '#6B7280', margin: 'xl' });
     const fv = d.focusValues || {};
     bodyContents.push({
-      type: 'box', layout: 'vertical', margin: 'sm', contents: d.focusList.map(f => ({
-        type: 'box', layout: 'horizontal', margin: 'xs', contents: [
-          { type: 'text', text: '• ' + f, size: 'sm', color: '#F59E0B', flex: 3 },
-          { type: 'text', text: fv[f] ? formatNum(fv[f]) : '-', size: 'sm', weight: 'bold', color: '#F1F5F9', align: 'end', flex: 1 }
+      type: 'box', layout: 'vertical', margin: 'sm', backgroundColor: '#1E293B', cornerRadius: '10px', paddingAll: '12px', contents: d.focusList.map(f => ({
+        type: 'box', layout: 'horizontal', margin: 'sm', contents: [
+          { type: 'text', text: f, size: 'md', color: '#F59E0B', flex: 3, weight: 'bold' },
+          { type: 'text', text: fv[f] ? formatNum(fv[f]) : '-', size: 'md', weight: 'bold', color: '#FFFFFF', align: 'end', flex: 2 }
         ]
       }))
     });
@@ -189,13 +189,13 @@ function buildDailySummaryFlex(s, skuList, focusList) {
     bodyContents.push({ type: 'separator', margin: 'xl', color: '#E5E7EB' });
     bodyContents.push({
       type: 'box', layout: 'horizontal', margin: 'xl', contents: [
-        { type: 'text', text: '☕ All Cafee รวม', size: 'md', color: '#374151', flex: 2 },
+        { type: 'text', text: '☕ All Online รวม', size: 'md', color: '#374151', flex: 2 },
         { type: 'text', text: formatNum(s.allCafee), size: 'xl', weight: 'bold', color: '#D97706', align: 'end', flex: 1 }
       ]
     });
     if (s.allCafeeTarget > 0) {
       const cafeeBar = Math.min(Number(s.allCafeePercent), 100);
-      bodyContents.push(buildProgressBar('เป้า All Cafee', s.allCafeePercent, cafeeBar, formatNum(s.allCafeeTarget)));
+      bodyContents.push(buildProgressBar('เป้า All Online', s.allCafeePercent, cafeeBar, formatNum(s.allCafeeTarget)));
     }
   }
 
@@ -205,10 +205,10 @@ function buildDailySummaryFlex(s, skuList, focusList) {
     bodyContents.push({ type: 'separator', margin: 'xl', color: '#E5E7EB' });
     bodyContents.push({ type: 'text', text: '🎯 Focus 4SKU รวมวัน', size: 'sm', color: '#6B7280', margin: 'xl' });
     bodyContents.push({
-      type: 'box', layout: 'vertical', margin: 'sm', contents: sfvKeys.map(k => ({
-        type: 'box', layout: 'horizontal', margin: 'xs', contents: [
-          { type: 'text', text: '• ' + k, size: 'sm', color: '#F59E0B', flex: 3 },
-          { type: 'text', text: formatNum(sfv[k]), size: 'sm', weight: 'bold', color: '#F1F5F9', align: 'end', flex: 1 }
+      type: 'box', layout: 'vertical', margin: 'sm', backgroundColor: '#1E293B', cornerRadius: '10px', paddingAll: '12px', contents: sfvKeys.map(k => ({
+        type: 'box', layout: 'horizontal', margin: 'sm', contents: [
+          { type: 'text', text: k, size: 'md', color: '#F59E0B', flex: 3, weight: 'bold' },
+          { type: 'text', text: formatNum(sfv[k]), size: 'md', weight: 'bold', color: '#FFFFFF', align: 'end', flex: 2 }
         ]
       }))
     });

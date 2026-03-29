@@ -329,7 +329,7 @@ opacity:0;pointer-events:none;
       <input type="text" id="tmInput" inputmode="numeric" placeholder="0">
     </div>
     <div class="form-group">
-      <label>☕ ยอด All Cafee</label>
+      <label>☕ ยอด All Online</label>
       <input type="text" id="allCafeeInput" inputmode="numeric" placeholder="0">
     </div>
   </div>
@@ -627,7 +627,7 @@ function renderMenu() {
       <div class="menu-item" onclick="openTargetEdit()">
         <div class="menu-icon">🎯</div>
         <div><div class="menu-label">แก้ไขเป้าหมายยอด</div>
-        <div class="menu-desc">เป้ายอดขาย เป้าต่อหัว เป้า All Cafee</div></div>
+        <div class="menu-desc">เป้ายอดขาย เป้าต่อหัว เป้า All Online</div></div>
       </div>
       <div class="menu-item" onclick="openSkuEdit()">
         <div class="menu-icon">📦</div>
@@ -837,7 +837,7 @@ function renderTargetEdit(t) {
       ${renderShiftRow('perHead', 'ดึก', 'Night', t.perHeadNight, 'purple')}
     </div>
     <div class="target-card">
-      <div class="target-label">☕ เป้ายอด All Cafee</div>
+      <div class="target-label">☕ เป้ายอด All Online</div>
       ${renderShiftRow('cafee', 'เช้า', 'Morning', t.cafeeMorning, 'orange')}
       ${renderShiftRow('cafee', 'บ่าย', 'Afternoon', t.cafeeAfternoon, 'orange')}
       ${renderShiftRow('cafee', 'ดึก', 'Night', t.cafeeNight, 'orange')}
