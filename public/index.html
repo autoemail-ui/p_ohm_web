@@ -771,6 +771,7 @@ async function saveDropdown() {
       renderTeamChips();
       showToast('บันทึกรายชื่อสำเร็จ ✅');
       closeModal();
+      loadDropdown();
     }
   } catch (e) {
     showToast('เกิดข้อผิดพลาด', true);
@@ -1099,7 +1100,11 @@ async function saveList(type) {
   try {
     const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const data = await res.json();
-    if (data.success) { showToast('บันทึกสำเร็จ ✅'); closeModal(); }
+    if (data.success) {
+      showToast('บันทึกสำเร็จ ✅');
+      closeModal();
+      if (type === 'focus') loadFocusInputs();
+    }
   } catch (e) { showToast('เกิดข้อผิดพลาด', true); }
 }
 
