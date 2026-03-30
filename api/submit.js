@@ -117,16 +117,6 @@ function buildFlexMessage(d) {
     });
   }
 
-  if (d.skuList && d.skuList.length > 0) {
-    bodyContents.push({ type: 'separator', margin: 'xl', color: '#E5E7EB' });
-    bodyContents.push({ type: 'text', text: '📦 รายการ SKU', size: 'sm', color: '#6B7280', margin: 'xl' });
-    bodyContents.push({
-      type: 'box', layout: 'vertical', margin: 'sm', contents: d.skuList.map(s => ({
-        type: 'text', text: '• ' + s, size: 'xs', color: '#94A3B8', margin: 'xs'
-      }))
-    });
-  }
-
   return {
     type: 'flex',
     altText: `📊 ยอดขายผลัด${d.shift} ${d.date}`,
