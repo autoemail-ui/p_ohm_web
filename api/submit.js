@@ -165,7 +165,7 @@ function buildDailySummaryFlex(s, skuList, focusList) {
         { type: 'text', text: formatNum(s.perHead), size: 'xl', weight: 'bold', color: '#7C3AED', align: 'end', flex: 1 }
       ]
     },
-    buildProgressBar('เป้าต่อหัวรวม', s.perHeadPercent, perHeadBar, formatNum(s.perHeadTarget)),
+    buildProgressBar('เป้าต่อหัวเฉลี่ย', s.perHeadPercent, perHeadBar, formatNum(s.perHeadTarget)),
     { type: 'separator', margin: 'xl', color: '#E5E7EB' },
     {
       type: 'box', layout: 'horizontal', margin: 'xl', contents: [
