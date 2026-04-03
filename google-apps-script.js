@@ -140,13 +140,15 @@ function buildDailySummary(ss, dateStr, targetKey) {
       }
     }
   }
+  var shiftCount = shifts.length || 1;
   var allCafeePercent = dCafee > 0 ? (tAllOnline / dCafee * 100) : 0;
+  var avgPerHeadTarget = dPerHead / shiftCount;
   return {
     date: dateStr, shifts: shifts, product: tP, card: tC, total: gTotal,
     customers: tCust, perHead: gPerHead.toFixed(2), tm: tTm,
     walletPercent: gWallet.toFixed(2),
     salesTarget: dSales, salesPercent: dSales > 0 ? (gTotal/dSales*100).toFixed(2) : '0.00',
-    perHeadTarget: dPerHead, perHeadPercent: dPerHead > 0 ? (gPerHead/dPerHead*100).toFixed(2) : '0.00',
+    perHeadTarget: avgPerHeadTarget, perHeadPercent: avgPerHeadTarget > 0 ? (gPerHead/avgPerHeadTarget*100).toFixed(2) : '0.00',
     allCafee: tAllOnline, allCafeeTarget: dCafee, allCafeePercent: allCafeePercent.toFixed(2),
     focusValues: mergedFocus
   };
