@@ -263,6 +263,17 @@ position:absolute;top:-4px;right:-4px;width:20px;height:20px;
 background:var(--danger);color:#fff;border:none;border-radius:50%;
 font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;
 }
+.saving-overlay{
+position:fixed;inset:0;background:#000c;z-index:9998;
+display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+opacity:0;pointer-events:none;transition:opacity .3s;
+}
+.saving-overlay.show{opacity:1;pointer-events:all}
+.saving-overlay .spinner-lg{
+width:40px;height:40px;border:3px solid #fff3;border-top-color:var(--primary);
+border-radius:50%;animation:spin .6s linear infinite;
+}
+.saving-overlay .saving-text{color:#fff;font-size:15px;font-weight:600}
 
 @media(min-width:768px){
 body{
@@ -299,6 +310,10 @@ opacity:0;pointer-events:none;
 <body>
 
 <div id="toast" class="toast"></div>
+<div id="savingOverlay" class="saving-overlay">
+  <div class="spinner-lg"></div>
+  <div class="saving-text" id="savingText">กำลังบันทึก...</div>
+</div>
 
 <div class="mobile-shell">
   <div class="header">
@@ -577,21 +592,46 @@ function removeImage(idx) {
   renderImagePreviews();
 }
 
+var gasUrl = null;
+
+async function getGasUrl() {
+  if (gasUrl) return gasUrl;
+  try {
+    const res = await fetch('/api/upload');
+    const data = await res.json();
+    gasUrl = data.gasUrl;
+    return gasUrl;
+  } catch(e) { return null; }
+}
+
 async function uploadImages(date, shift) {
+  const url = await getGasUrl();
+  if (!url) return [];
   const images = selectedImages.map((img, i) => ({
     data: img.data,
     name: date.replace(/\//g, '-') + '_' + shift + '_' + (i + 1)
   }));
   try {
-    const res = await fetch('/api/upload', {
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ images })
+      body: JSON.stringify({ action: 'uploadImage', images }),
+      redirect: 'follow'
     });
-    const data = await res.json();
+    const text = await res.text();
+    const data = JSON.parse(text);
     if (data.success) return data.urls || [];
   } catch (e) {}
   return [];
+}
+
+function showSaving(msg) {
+  document.getElementById('savingText').textContent = msg || 'กำลังบันทึก...';
+  document.getElementById('savingOverlay').classList.add('show');
+}
+
+function hideSaving() {
+  document.getElementById('savingOverlay').classList.remove('show');
 }
 
 async function submitForm() {
@@ -617,14 +657,16 @@ async function submitForm() {
 
   btn.classList.add('loading');
   btn.disabled = true;
+  showSaving('กำลังบันทึก...');
 
   try {
     let imageUrls = [];
     if (selectedImages.length > 0) {
-      showToast('กำลังอัพโหลดรูปภาพ...');
+      showSaving('กำลังอัพโหลดรูปภาพ...');
       imageUrls = await uploadImages(date, currentShift);
     }
 
+    showSaving('กำลังบันทึกข้อมูล...');
     const res = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -657,6 +699,7 @@ async function submitForm() {
   } catch (e) {
     showToast('ไม่สามารถเชื่อมต่อได้', true);
   } finally {
+    hideSaving();
     btn.classList.remove('loading');
     btn.disabled = false;
   }

@@ -129,7 +129,7 @@ function handleUploadImage(data) {
       var blob = Utilities.newBlob(Utilities.base64Decode(base64), mime, fileName);
       var file = folder.createFile(blob);
       file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      urls.push('https://drive.google.com/uc?id=' + file.getId());
+      urls.push('https://lh3.googleusercontent.com/d/' + file.getId());
     }
     return jsonResponse({ success: true, urls: urls });
   } catch(e) {
