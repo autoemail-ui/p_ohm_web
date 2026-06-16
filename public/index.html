@@ -606,8 +606,14 @@ async function uploadImages(date, shift) {
         })
       });
       const data = await res.json();
-      if (data.success && data.url) urls.push(data.url);
-    } catch (e) {}
+      if (data.success && data.url) {
+        urls.push(data.url);
+      } else {
+        showToast('อัพโหลดรูปที่ ' + (i+1) + ' ไม่สำเร็จ: ' + (data.error || 'unknown'), true);
+      }
+    } catch (e) {
+      showToast('อัพโหลดรูปที่ ' + (i+1) + ' ล้มเหลว: ' + e.message, true);
+    }
   }
   return urls;
 }

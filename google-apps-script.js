@@ -111,8 +111,20 @@ function getOrCreateImageFolder() {
 
 function forceAuth() {
   DriveApp.getRootFolder();
+  DriveApp.getFolderById('10l_RmQUSuRwbfw8GiCLuVkhNtWqIhzaD');
   SpreadsheetApp.getActiveSpreadsheet();
   Logger.log('สิทธิ์ถูกอนุญาตแล้ว');
+}
+
+function testImageUpload() {
+  var folder = getOrCreateImageFolder();
+  Logger.log('Folder OK: ' + folder.getName());
+  var blob = Utilities.newBlob('test', 'text/plain', 'test.txt');
+  var file = folder.createFile(blob);
+  Logger.log('File created: ' + file.getName() + ' ID: ' + file.getId());
+  Logger.log('URL: https://lh3.googleusercontent.com/d/' + file.getId());
+  file.setTrashed(true);
+  Logger.log('Test file deleted');
 }
 
 function handleUploadImage(data) {
