@@ -27,11 +27,27 @@ export default async function handler(req, res) {
         messages.push(buildDailySummaryFlex(d.dailySummary, d.skuList, d.focusList));
       }
 
+      const imageUrls = d.imageUrls || [];
+      imageUrls.forEach(url => {
+        if (messages.length < 5) {
+          messages.push({ type: 'image', originalContentUrl: url, previewImageUrl: url });
+        }
+      });
+
       await fetch('https://api.line.me/v2/bot/message/push', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${LINE_TOKEN}` },
         body: JSON.stringify({ to: LINE_GROUP_ID, messages })
       });
+
+      if (imageUrls.length > 3) {
+        const extraImages = imageUrls.slice(3).map(url => ({ type: 'image', originalContentUrl: url, previewImageUrl: url }));
+        await fetch('https://api.line.me/v2/bot/message/push', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${LINE_TOKEN}` },
+          body: JSON.stringify({ to: LINE_GROUP_ID, messages: extraImages.slice(0, 5) })
+        });
+      }
     }
 
     return res.status(200).json(gasData);
@@ -115,6 +131,26 @@ function buildFlexMessage(d) {
         ]
       }))
     });
+  }
+
+  if (d.shortage > 0 || d.postVoidCount > 0) {
+    bodyContents.push({ type: 'separator', margin: 'xl', color: '#E5E7EB' });
+    if (d.shortage > 0) {
+      bodyContents.push({
+        type: 'box', layout: 'horizontal', margin: 'xl', contents: [
+          { type: 'text', text: '📦 สินค้าขาดสั่ง', size: 'sm', color: '#6B7280', flex: 2 },
+          { type: 'text', text: formatNum(d.shortage), size: 'md', weight: 'bold', color: '#EF4444', align: 'end', flex: 1 }
+        ]
+      });
+    }
+    if (d.postVoidCount > 0) {
+      bodyContents.push({
+        type: 'box', layout: 'horizontal', margin: 'md', contents: [
+          { type: 'text', text: '🚫 Post Void', size: 'sm', color: '#6B7280', flex: 2 },
+          { type: 'text', text: `${formatNum(d.postVoidCount)} รายการ / ${formatNum(d.postVoidValue)} บาท`, size: 'sm', weight: 'bold', color: '#EF4444', align: 'end', flex: 3 }
+        ]
+      });
+    }
   }
 
   return {

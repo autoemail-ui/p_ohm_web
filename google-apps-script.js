@@ -75,8 +75,29 @@ function handleSubmit(data) {
 
   var focusValues = data.focusValues || {};
   var focusJson = JSON.stringify(focusValues);
+  var shortage = Number(data.shortage) || 0;
+  var postVoidCount = Number(data.postVoidCount) || 0;
+  var postVoidValue = Number(data.postVoidValue) || 0;
 
-  sheet.appendRow([runningNo, data.date, data.shift, Number(data.product), Number(data.card), total, Number(data.customers), perHead, Number(data.tm), walletPercent, data.team, allCafee, focusJson, new Date()]);
+  var imageUrls = [];
+  var images = data.images || [];
+  if (images.length > 0) {
+    var folder = getOrCreateImageFolder();
+    for (var img = 0; img < images.length; img++) {
+      try {
+        var base64 = images[img].split(',')[1];
+        var mimeMatch = images[img].match(/data:(.*?);/);
+        var mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+        var ext = mime.split('/')[1] || 'jpg';
+        var blob = Utilities.newBlob(Utilities.base64Decode(base64), mime, data.date.replace(/\//g,'-') + '_' + data.shift + '_' + (img+1) + '.' + ext);
+        var file = folder.createFile(blob);
+        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        imageUrls.push('https://drive.google.com/uc?id=' + file.getId());
+      } catch(e) {}
+    }
+  }
+
+  sheet.appendRow([runningNo, data.date, data.shift, Number(data.product), Number(data.card), total, Number(data.customers), perHead, Number(data.tm), walletPercent, data.team, allCafee, focusJson, shortage, postVoidCount, postVoidValue, new Date()]);
 
   var dailySummary = null;
   if (data.shift === 'ดึก') {
@@ -94,9 +115,14 @@ function handleSubmit(data) {
       allCafee, allCafeeTarget, allCafeePercent: allCafeePercent.toFixed(2),
       salesTarget, salesPercent: salesPercent.toFixed(2),
       perHeadTarget, perHeadPercent: perHeadPercent.toFixed(2),
-      focusValues, skuList, focusList, dailySummary
+      shortage, postVoidCount, postVoidValue,
+      focusValues, skuList, focusList, dailySummary, imageUrls
     }
   });
+}
+
+function getOrCreateImageFolder() {
+  return DriveApp.getFolderById('10l_RmQUSuRwbfw8GiCLuVkhNtWqIhzaD');
 }
 
 function buildDailySummary(ss, dateStr, targetKey) {
@@ -261,7 +287,7 @@ function setupSheets() {
   initSheetId();
   const ss = getSS();
   let s1 = ss.getSheetByName('ข้อมูลรวม');
-  if (!s1) { s1 = ss.insertSheet('ข้อมูลรวม'); s1.appendRow(['ลำดับ','วันที่','ผลัด','สินค้า','บัตร','รวม','ลูกค้า','ต่อหัว','TM','Wallet%','ทีมงาน','AllOnline','FocusSKU','เวลาบันทึก']); }
+  if (!s1) { s1 = ss.insertSheet('ข้อมูลรวม'); s1.appendRow(['ลำดับ','วันที่','ผลัด','สินค้า','บัตร','รวม','ลูกค้า','ต่อหัว','TM','Wallet%','ทีมงาน','AllOnline','FocusSKU','สินค้าขาดสั่ง','PostVoidจำนวน','PostVoidมูลค่า','เวลาบันทึก']); }
   let s2 = ss.getSheetByName('ยอดขาย');
   if (!s2) { s2 = ss.insertSheet('ยอดขาย'); s2.appendRow(['key(YYYY-MM)','เป้าขายเช้า','เป้าขายบ่าย','เป้าขายดึก','เป้าต่อหัวเช้า','เป้าต่อหัวบ่าย','เป้าต่อหัวดึก','AllOnlineเช้า','AllOnlineบ่าย','AllOnlineดึก','วันที่แก้ไข','รายละเอียด']); }
   let s3 = ss.getSheetByName('_database');

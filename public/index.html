@@ -246,6 +246,23 @@ font-family:'IBM Plex Sans Thai',sans-serif;font-size:13px;white-space:nowrap;
 }
 .dragging{opacity:0.4;background:var(--surface2)}
 .drag-over{border-color:var(--primary);background:var(--surface)}
+.img-upload-btn{
+display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px;
+border:2px dashed var(--border);border-radius:var(--radius-sm);
+color:var(--text3);font-size:13px;cursor:pointer;transition:all .2s;
+}
+.img-upload-btn:active{border-color:var(--primary);color:var(--primary)}
+.img-preview-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.img-preview-item{
+position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;
+border:1.5px solid var(--border);
+}
+.img-preview-item img{width:100%;height:100%;object-fit:cover}
+.img-preview-del{
+position:absolute;top:-4px;right:-4px;width:20px;height:20px;
+background:var(--danger);color:#fff;border:none;border-radius:50%;
+font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+}
 
 @media(min-width:768px){
 body{
@@ -337,6 +354,33 @@ opacity:0;pointer-events:none;
   <div class="card" id="focusSkuCard" style="display:none">
     <div class="card-title"><span>⭐</span> ยอด Focus SKU</div>
     <div id="focusSkuInputs"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span>📋</span> ข้อมูลเพิ่มเติม</div>
+    <div class="form-group">
+      <label>📦 มูลค่าสินค้าขาดสั่ง</label>
+      <input type="text" id="shortageInput" inputmode="numeric" placeholder="0">
+    </div>
+    <div class="form-group">
+      <label>🚫 จำนวน Post Void</label>
+      <input type="text" id="postVoidCountInput" inputmode="numeric" placeholder="0">
+    </div>
+    <div class="form-group">
+      <label>🚫 มูลค่า Post Void</label>
+      <input type="text" id="postVoidValueInput" inputmode="numeric" placeholder="0">
+    </div>
+    <div class="form-group">
+      <label>📷 แนบภาพประกอบ</label>
+      <div class="img-upload" id="imgUploadArea">
+        <input type="file" id="imageInput" accept="image/*" multiple style="display:none" onchange="handleImageSelect(event)">
+        <div class="img-upload-btn" onclick="document.getElementById('imageInput').click()">
+          <span style="font-size:24px">📷</span>
+          <span>แตะเพื่อเลือกภาพ</span>
+        </div>
+        <div id="imagePreview" class="img-preview-list"></div>
+      </div>
+    </div>
   </div>
 
   <button class="btn-submit" id="submitBtn" onclick="submitForm()">
@@ -476,6 +520,37 @@ function renderFocusInputs() {
   });
 }
 
+var selectedImages = [];
+
+function handleImageSelect(e) {
+  const files = Array.from(e.target.files);
+  files.forEach(file => {
+    if (selectedImages.length >= 5) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      selectedImages.push({ name: file.name, data: ev.target.result });
+      renderImagePreviews();
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+}
+
+function renderImagePreviews() {
+  const container = document.getElementById('imagePreview');
+  container.innerHTML = selectedImages.map((img, i) => `
+    <div class="img-preview-item">
+      <img src="${img.data}">
+      <button class="img-preview-del" onclick="removeImage(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function removeImage(idx) {
+  selectedImages.splice(idx, 1);
+  renderImagePreviews();
+}
+
 async function submitForm() {
   const btn = document.getElementById('submitBtn');
   const date = document.getElementById('dateInput').value;
@@ -484,6 +559,9 @@ async function submitForm() {
   const customers = parseNumber(document.getElementById('customerInput').value);
   const tm = parseNumber(document.getElementById('tmInput').value);
   const allCafee = parseNumber(document.getElementById('allCafeeInput').value);
+  const shortage = parseNumber(document.getElementById('shortageInput').value);
+  const postVoidCount = parseNumber(document.getElementById('postVoidCountInput').value);
+  const postVoidValue = parseNumber(document.getElementById('postVoidValueInput').value);
   const team = selectedTeam.join(', ');
 
   const focusValues = {};
@@ -498,13 +576,16 @@ async function submitForm() {
   btn.disabled = true;
 
   try {
+    const images = selectedImages.map(img => img.data);
+
     const res = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'submit',
         date, shift: currentShift,
-        product, card, customers, tm, allCafee, team, focusValues
+        product, card, customers, tm, allCafee, team, focusValues,
+        shortage, postVoidCount, postVoidValue, images
       })
     });
     const data = await res.json();
@@ -515,7 +596,12 @@ async function submitForm() {
       document.getElementById('customerInput').value = '';
       document.getElementById('tmInput').value = '';
       document.getElementById('allCafeeInput').value = '';
+      document.getElementById('shortageInput').value = '';
+      document.getElementById('postVoidCountInput').value = '';
+      document.getElementById('postVoidValueInput').value = '';
       currentFocusList.forEach((_, i) => { const el = document.getElementById('focusSku_' + i); if (el) el.value = ''; });
+      selectedImages = [];
+      renderImagePreviews();
       selectedTeam = [];
       renderTeamChips();
     } else {
