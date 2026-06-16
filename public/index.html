@@ -532,14 +532,34 @@ function handleImageSelect(e) {
   const files = Array.from(e.target.files);
   files.forEach(file => {
     if (selectedImages.length >= 5) return;
-    const reader = new FileReader();
-    reader.onload = function(ev) {
-      selectedImages.push({ name: file.name, data: ev.target.result });
+    compressImage(file, function(dataUrl) {
+      selectedImages.push({ name: file.name, data: dataUrl });
       renderImagePreviews();
-    };
-    reader.readAsDataURL(file);
+    });
   });
   e.target.value = '';
+}
+
+function compressImage(file, callback) {
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      const maxSize = 1200;
+      let w = img.width, h = img.height;
+      if (w > maxSize || h > maxSize) {
+        if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+        else { w = Math.round(w * maxSize / h); h = maxSize; }
+      }
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      callback(canvas.toDataURL('image/jpeg', 0.7));
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
 }
 
 function renderImagePreviews() {
@@ -555,6 +575,23 @@ function renderImagePreviews() {
 function removeImage(idx) {
   selectedImages.splice(idx, 1);
   renderImagePreviews();
+}
+
+async function uploadImages(date, shift) {
+  const images = selectedImages.map((img, i) => ({
+    data: img.data,
+    name: date.replace(/\//g, '-') + '_' + shift + '_' + (i + 1)
+  }));
+  try {
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ images })
+    });
+    const data = await res.json();
+    if (data.success) return data.urls || [];
+  } catch (e) {}
+  return [];
 }
 
 async function submitForm() {
@@ -582,7 +619,11 @@ async function submitForm() {
   btn.disabled = true;
 
   try {
-    const images = selectedImages.map(img => img.data);
+    let imageUrls = [];
+    if (selectedImages.length > 0) {
+      showToast('กำลังอัพโหลดรูปภาพ...');
+      imageUrls = await uploadImages(date, currentShift);
+    }
 
     const res = await fetch(API_URL, {
       method: 'POST',
@@ -591,7 +632,7 @@ async function submitForm() {
         action: 'submit',
         date, shift: currentShift,
         product, card, customers, tm, allCafee, team, focusValues,
-        shortage, postVoidCount, postVoidValue, images
+        shortage, postVoidCount, postVoidValue, imageUrls
       })
     });
     const data = await res.json();

@@ -26,6 +26,7 @@ function doPost(e) {
     if (action === 'saveSku') return handleSaveSku(data);
     if (action === 'getFocus') return handleGetFocus();
     if (action === 'saveFocus') return handleSaveFocus(data);
+    if (action === 'uploadImage') return handleUploadImage(data);
     return jsonResponse({ success: false, error: 'Unknown action' });
   } catch (err) {
     return jsonResponse({ success: false, error: err.message });
@@ -78,24 +79,7 @@ function handleSubmit(data) {
   var shortage = Number(data.shortage) || 0;
   var postVoidCount = Number(data.postVoidCount) || 0;
   var postVoidValue = Number(data.postVoidValue) || 0;
-
-  var imageUrls = [];
-  var images = data.images || [];
-  if (images.length > 0) {
-    var folder = getOrCreateImageFolder();
-    for (var img = 0; img < images.length; img++) {
-      try {
-        var base64 = images[img].split(',')[1];
-        var mimeMatch = images[img].match(/data:(.*?);/);
-        var mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
-        var ext = mime.split('/')[1] || 'jpg';
-        var blob = Utilities.newBlob(Utilities.base64Decode(base64), mime, data.date.replace(/\//g,'-') + '_' + data.shift + '_' + (img+1) + '.' + ext);
-        var file = folder.createFile(blob);
-        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-        imageUrls.push('https://drive.google.com/uc?id=' + file.getId());
-      } catch(e) {}
-    }
-  }
+  var imageUrls = data.imageUrls || [];
 
   sheet.appendRow([runningNo, data.date, data.shift, Number(data.product), Number(data.card), total, Number(data.customers), perHead, Number(data.tm), walletPercent, data.team, allCafee, focusJson, shortage, postVoidCount, postVoidValue, new Date()]);
 
@@ -129,6 +113,28 @@ function forceAuth() {
   DriveApp.getRootFolder();
   SpreadsheetApp.getActiveSpreadsheet();
   Logger.log('สิทธิ์ถูกอนุญาตแล้ว');
+}
+
+function handleUploadImage(data) {
+  try {
+    var folder = getOrCreateImageFolder();
+    var images = data.images || [];
+    var urls = [];
+    for (var i = 0; i < images.length; i++) {
+      var base64 = images[i].data.split(',')[1];
+      var mimeMatch = images[i].data.match(/data:(.*?);/);
+      var mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+      var ext = mime.split('/')[1] || 'jpg';
+      var fileName = (images[i].name || 'image_' + (i+1)) + '.' + ext;
+      var blob = Utilities.newBlob(Utilities.base64Decode(base64), mime, fileName);
+      var file = folder.createFile(blob);
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      urls.push('https://drive.google.com/uc?id=' + file.getId());
+    }
+    return jsonResponse({ success: true, urls: urls });
+  } catch(e) {
+    return jsonResponse({ success: false, error: e.message });
+  }
 }
 
 function buildDailySummary(ss, dateStr, targetKey) {
