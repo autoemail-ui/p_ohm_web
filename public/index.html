@@ -489,6 +489,9 @@ document.querySelectorAll('input[inputmode="numeric"]').forEach(inp => {
 var currentFocusList = [];
 
 function loadFocusInputs() {
+  const card = document.getElementById('focusSkuCard');
+  card.style.display = 'block';
+  document.getElementById('focusSkuInputs').innerHTML = '<div class="loading-box"><div class="inline-spinner"></div>กำลังโหลด Focus SKU...</div>';
   fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -501,7 +504,10 @@ function loadFocusInputs() {
       renderFocusInputs();
     }
   })
-  .catch(() => {});
+  .catch(() => {
+    document.getElementById('focusSkuInputs').innerHTML = '';
+    card.style.display = 'none';
+  });
 }
 
 function renderFocusInputs() {

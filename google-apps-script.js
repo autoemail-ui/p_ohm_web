@@ -125,6 +125,12 @@ function getOrCreateImageFolder() {
   return DriveApp.getFolderById('10l_RmQUSuRwbfw8GiCLuVkhNtWqIhzaD');
 }
 
+function forceAuth() {
+  DriveApp.getRootFolder();
+  SpreadsheetApp.getActiveSpreadsheet();
+  Logger.log('สิทธิ์ถูกอนุญาตแล้ว');
+}
+
 function buildDailySummary(ss, dateStr, targetKey) {
   const sheet = ss.getSheetByName('ข้อมูลรวม');
   const lastRow = sheet.getLastRow();
