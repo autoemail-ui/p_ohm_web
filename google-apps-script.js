@@ -118,20 +118,15 @@ function forceAuth() {
 function handleUploadImage(data) {
   try {
     var folder = getOrCreateImageFolder();
-    var images = data.images || [];
-    var urls = [];
-    for (var i = 0; i < images.length; i++) {
-      var base64 = images[i].data.split(',')[1];
-      var mimeMatch = images[i].data.match(/data:(.*?);/);
-      var mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
-      var ext = mime.split('/')[1] || 'jpg';
-      var fileName = (images[i].name || 'image_' + (i+1)) + '.' + ext;
-      var blob = Utilities.newBlob(Utilities.base64Decode(base64), mime, fileName);
-      var file = folder.createFile(blob);
-      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      urls.push('https://lh3.googleusercontent.com/d/' + file.getId());
-    }
-    return jsonResponse({ success: true, urls: urls });
+    var base64 = data.image.split(',')[1];
+    var mimeMatch = data.image.match(/data:(.*?);/);
+    var mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    var ext = mime.split('/')[1] || 'jpg';
+    var fileName = (data.fileName || 'image') + '.' + ext;
+    var blob = Utilities.newBlob(Utilities.base64Decode(base64), mime, fileName);
+    var file = folder.createFile(blob);
+    var url = 'https://lh3.googleusercontent.com/d/' + file.getId();
+    return jsonResponse({ success: true, url: url });
   } catch(e) {
     return jsonResponse({ success: false, error: e.message });
   }

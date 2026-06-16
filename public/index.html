@@ -592,37 +592,24 @@ function removeImage(idx) {
   renderImagePreviews();
 }
 
-var gasUrl = null;
-
-async function getGasUrl() {
-  if (gasUrl) return gasUrl;
-  try {
-    const res = await fetch('/api/upload');
-    const data = await res.json();
-    gasUrl = data.gasUrl;
-    return gasUrl;
-  } catch(e) { return null; }
-}
-
 async function uploadImages(date, shift) {
-  const url = await getGasUrl();
-  if (!url) return [];
-  const images = selectedImages.map((img, i) => ({
-    data: img.data,
-    name: date.replace(/\//g, '-') + '_' + shift + '_' + (i + 1)
-  }));
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'uploadImage', images }),
-      redirect: 'follow'
-    });
-    const text = await res.text();
-    const data = JSON.parse(text);
-    if (data.success) return data.urls || [];
-  } catch (e) {}
-  return [];
+  const urls = [];
+  for (let i = 0; i < selectedImages.length; i++) {
+    showSaving('กำลังอัพโหลดรูปที่ ' + (i+1) + '/' + selectedImages.length + '...');
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: selectedImages[i].data,
+          fileName: date.replace(/\//g, '-') + '_' + shift + '_' + (i + 1)
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.url) urls.push(data.url);
+    } catch (e) {}
+  }
+  return urls;
 }
 
 function showSaving(msg) {
