@@ -805,7 +805,7 @@ function renderMenu() {
       </div>
       <div class="menu-item" onclick="openFocusEdit()">
         <div class="menu-icon">⭐</div>
-        <div><div class="menu-label">แก้ไข Focus 4SKU</div>
+        <div><div class="menu-label">แก้ไข Focus 8SKU</div>
         <div class="menu-desc">4 รายการที่เน้นขาย</div></div>
       </div>
     </div>
@@ -1084,7 +1084,7 @@ async function openSkuEdit() {
 }
 
 async function openFocusEdit() {
-  showModal('แก้ไข Focus 4SKU', '<div class="loading-box"><div class="inline-spinner"></div>กำลังโหลด...</div>');
+  showModal('แก้ไข Focus 8SKU', '<div class="loading-box"><div class="inline-spinner"></div>กำลังโหลด...</div>');
   try {
     const [focusRes, skuRes] = await Promise.all([
       fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'getFocus' }) }).then(r => r.json()),
@@ -1093,7 +1093,7 @@ async function openFocusEdit() {
     if (focusRes.success && skuRes.success) {
       editFocusList = focusRes.focus || [];
       allSkuOptions = skuRes.skus || [];
-      showModal('แก้ไข Focus 4SKU', renderFocusEdit());
+      showModal('แก้ไข Focus 8SKU', renderFocusEdit());
     }
   } catch (e) { showToast('เกิดข้อผิดพลาด', true); }
 }
@@ -1109,10 +1109,10 @@ function renderFocusEdit() {
     </div>
   `).join('');
 
-  const canAdd = editFocusList.length < 4;
+  const canAdd = editFocusList.length < 8;
   return `
     <div>${items}</div>
-    <div style="color:var(--text3);font-size:12px;margin:8px 0">สูงสุด 4 รายการ (${editFocusList.length}/4)</div>
+    <div style="color:var(--text3);font-size:12px;margin:8px 0">สูงสุด 8 รายการ (${editFocusList.length}/8)</div>
     ${canAdd ? `
     <div style="position:relative">
       <input type="text" id="focusSearchInput" placeholder="พิมพ์ค้นหา SKU..." oninput="filterSkuDropdown()" onfocus="showSkuDropdown()" autocomplete="off" style="width:100%;padding:10px 12px;font-size:14px">
@@ -1148,7 +1148,7 @@ function filterSkuDropdown() {
 }
 
 function selectFocusSku(name) {
-  if (editFocusList.length >= 4) { showToast('Focus 4SKU สูงสุด 4 รายการ', true); return; }
+  if (editFocusList.length >= 8) { showToast('Focus 8SKU สูงสุด 8 รายการ', true); return; }
   if (editFocusList.includes(name)) { showToast('รายการนี้เลือกอยู่แล้ว', true); return; }
   editFocusList.push(name);
   document.getElementById('modalBody').innerHTML = renderFocusEdit();

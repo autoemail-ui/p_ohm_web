@@ -121,7 +121,7 @@ function buildFlexMessage(d) {
 
   if (d.focusList && d.focusList.length > 0) {
     bodyContents.push({ type: 'separator', margin: 'xl', color: '#E5E7EB' });
-    bodyContents.push({ type: 'text', text: '🎯 Focus 4SKU', size: 'sm', color: '#6B7280', margin: 'xl' });
+    bodyContents.push({ type: 'text', text: '🎯 Focus 8SKU', size: 'sm', color: '#6B7280', margin: 'xl' });
     const fv = d.focusValues || {};
     bodyContents.push({
       type: 'box', layout: 'vertical', margin: 'sm', backgroundColor: '#1E293B', cornerRadius: '10px', paddingAll: '12px', contents: d.focusList.map(f => ({
@@ -229,7 +229,7 @@ function buildDailySummaryFlex(s, skuList, focusList) {
   const sfvKeys = Object.keys(sfv);
   if (sfvKeys.length > 0) {
     bodyContents.push({ type: 'separator', margin: 'xl', color: '#E5E7EB' });
-    bodyContents.push({ type: 'text', text: '🎯 Focus 4SKU รวมวัน', size: 'sm', color: '#6B7280', margin: 'xl' });
+    bodyContents.push({ type: 'text', text: '🎯 Focus 8SKU รวมวัน', size: 'sm', color: '#6B7280', margin: 'xl' });
     bodyContents.push({
       type: 'box', layout: 'vertical', margin: 'sm', backgroundColor: '#1E293B', cornerRadius: '10px', paddingAll: '12px', contents: sfvKeys.map(k => ({
         type: 'box', layout: 'horizontal', margin: 'sm', contents: [
@@ -238,6 +238,26 @@ function buildDailySummaryFlex(s, skuList, focusList) {
         ]
       }))
     });
+  }
+
+  if (s.shortage > 0 || s.postVoidCount > 0) {
+    bodyContents.push({ type: 'separator', margin: 'xl', color: '#E5E7EB' });
+    if (s.shortage > 0) {
+      bodyContents.push({
+        type: 'box', layout: 'horizontal', margin: 'xl', contents: [
+          { type: 'text', text: '📦 สินค้าขาดสั่งรวม', size: 'sm', color: '#6B7280', flex: 2 },
+          { type: 'text', text: formatNum(s.shortage), size: 'md', weight: 'bold', color: '#EF4444', align: 'end', flex: 1 }
+        ]
+      });
+    }
+    if (s.postVoidCount > 0) {
+      bodyContents.push({
+        type: 'box', layout: 'horizontal', margin: 'md', contents: [
+          { type: 'text', text: '🚫 Post Void รวม', size: 'sm', color: '#6B7280', flex: 2 },
+          { type: 'text', text: `${formatNum(s.postVoidCount)} รายการ / ${formatNum(s.postVoidValue)} บาท`, size: 'sm', weight: 'bold', color: '#EF4444', align: 'end', flex: 3 }
+        ]
+      });
+    }
   }
 
   return {

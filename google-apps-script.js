@@ -149,8 +149,9 @@ function buildDailySummary(ss, dateStr, targetKey) {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return null;
   const dates = sheet.getRange(2, 2, lastRow - 1, 1).getDisplayValues();
-  const rows = sheet.getRange(2, 3, lastRow - 1, 11).getValues();
+  const rows = sheet.getRange(2, 3, lastRow - 1, 14).getValues();
   var tP = 0, tC = 0, tCust = 0, tTm = 0, tAllOnline = 0, shifts = [];
+  var tShortage = 0, tPostVoidCount = 0, tPostVoidValue = 0;
   var mergedFocus = {};
   for (var i = 0; i < dates.length; i++) {
     if (dates[i][0].trim() === dateStr) {
@@ -159,6 +160,9 @@ function buildDailySummary(ss, dateStr, targetKey) {
       tCust += Number(rows[i][4]) || 0;
       tTm += Number(rows[i][6]) || 0;
       tAllOnline += Number(rows[i][9]) || 0;
+      tShortage += Number(rows[i][11]) || 0;
+      tPostVoidCount += Number(rows[i][12]) || 0;
+      tPostVoidValue += Number(rows[i][13]) || 0;
       shifts.push(rows[i][0]);
       try {
         var fv = JSON.parse(rows[i][10] || '{}');
@@ -195,6 +199,7 @@ function buildDailySummary(ss, dateStr, targetKey) {
     salesTarget: dSales, salesPercent: dSales > 0 ? (gTotal/dSales*100).toFixed(2) : '0.00',
     perHeadTarget: avgPerHeadTarget, perHeadPercent: avgPerHeadTarget > 0 ? (gPerHead/avgPerHeadTarget*100).toFixed(2) : '0.00',
     allCafee: tAllOnline, allCafeeTarget: dCafee, allCafeePercent: allCafeePercent.toFixed(2),
+    shortage: tShortage, postVoidCount: tPostVoidCount, postVoidValue: tPostVoidValue,
     focusValues: mergedFocus
   };
 }
@@ -310,5 +315,5 @@ function setupSheets() {
   let s2 = ss.getSheetByName('ยอดขาย');
   if (!s2) { s2 = ss.insertSheet('ยอดขาย'); s2.appendRow(['key(YYYY-MM)','เป้าขายเช้า','เป้าขายบ่าย','เป้าขายดึก','เป้าต่อหัวเช้า','เป้าต่อหัวบ่าย','เป้าต่อหัวดึก','AllOnlineเช้า','AllOnlineบ่าย','AllOnlineดึก','วันที่แก้ไข','รายละเอียด']); }
   let s3 = ss.getSheetByName('_database');
-  if (!s3) { s3 = ss.insertSheet('_database'); s3.appendRow(['รันเลข','รายชื่อทีมงาน','SKU','Focus 4SKU']); s3.getRange('A2').setValue(0); }
+  if (!s3) { s3 = ss.insertSheet('_database'); s3.appendRow(['รันเลข','รายชื่อทีมงาน','SKU','Focus 8SKU']); s3.getRange('A2').setValue(0); }
 }
